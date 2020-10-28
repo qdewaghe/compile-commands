@@ -20,6 +20,6 @@ jobs:
         python-version: ${{ matrix.python-version }}
     - name: Install
       run: | 
-        pip install -e .
+        python -m pip install --upgrade setuptools pip wheel pytest
     - name: Test with pytest
       run: pytest
