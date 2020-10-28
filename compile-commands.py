@@ -151,10 +151,6 @@ def dir_path(path: str):
         raise NotADirectoryError(path)
 
 
-def get_root_dir(p: str):
-    return Path(os.path.abspath(p)).parent.parts[-1]
-
-
 def get_compile_dbs(dir: str):
     paths = []
     for path in Path(dir).rglob("compile_commands.json"):
@@ -166,10 +162,6 @@ def get_compile_dbs(dir: str):
     return paths
 
 
-def to_absolute(target: str, dir: str):
-    return os.path.join(dir, target)
-
-
 def remove_files(data, files):
     return [d for d in data if d["file"] not in files]
 
@@ -179,13 +171,6 @@ def merge_json_files(paths):
     for path in paths:
         with open(str(path), "r") as json_file:
             data.extend(json.load(json_file))
-    return data
-
-
-def remove(data, flags):
-    for entry in data:
-        for flag in flags:
-            entry["command"] = entry["command"].replace(flag + " ", "")
     return data
 
 
