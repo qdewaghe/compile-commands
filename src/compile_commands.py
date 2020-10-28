@@ -156,7 +156,8 @@ def get_compile_dbs(dir: str):
     for path in Path(dir).rglob("compile_commands.json"):
         paths.append(Path(os.path.abspath(str(path))))
 
-    # We don't want the compilationDB of the root dir if it exists.
+    # We don't want the compilationDBs of the root dir if any
+    # because we assume that they're user generated
     paths = [p for p in paths if Path(
         p).parent.parts[-1] != Path(dir).parts[-1]]
     return paths
@@ -174,7 +175,7 @@ def merge_json_files(paths):
     return data
 
 
-def add_flags(data, flags):
+def add_flags(data, flags: str):
     for entry in data:
         entry["command"] = entry["command"] + ' ' + flags
     return data
@@ -185,7 +186,7 @@ def change_compiler_path(data, new_path: str):
         compiler_path = entry["command"].split(" ")[0]
         compiler = Path(compiler_path).parts[-1]
 
-        remove_trailing(new_path, "/")
+        new_path = remove_trailing(new_path, "/")
 
         entry["command"] = entry["command"].replace(
             compiler_path, new_path + "/" + compiler
@@ -199,15 +200,13 @@ def to_clang(data):
             entry["command"].replace(
                 "/gcc", "/clang").replace("/g++", "/clang++")
         )
-
     return data
 
 
 def to_gcc(data):
     for entry in data:
         entry["command"] = (entry["command"].replace(
-            "/clang", "/gcc").replace("/clang++", "/gcc"))
-
+            "/clang++", "/g++").replace("/clang", "/gcc"))
     return data
 
 
