@@ -9,17 +9,22 @@ Modifying compilation databases can be useful especially when you don't have con
 pip install compile-commands
 ```
 
+## Requirements
+
+Requires at least python 3.4. 
+
 ## Usage
 
-This tool has many possible uses, I'll go through some of them to showcase how it can be used.\
-In a project composed of subprojects where there are multiple build directory, LSP servers often don't handle this kind of project well.\
-You can use this utility to merge the compilation databases. It will find every compilation databases recursively.
+This tool has many possible uses, I'll go through some of them to showcase how it can be used.
+
+In a project composed of subproject with their own build folder, you can use `--merge` and indicate the root `--dir` and it will merge them in the specified directory.\
+This is particularly useful for LSP servers that don't handle these projects well.
 
 ```bash
 compile-commands --dir /path/to/project --merge
 ```
 
-You can also indicate to the LSP server that you prefer using libc++ instead of libstdc++:
+You can also indicate to the LSP server that you prefer using libc++ instead of libstdc++ even if your buildsystem doesn't use it.
 
 ```bash
 compile-commands --file /path/to/project/compile-commands.json \
