@@ -7,6 +7,9 @@ with open("README.md", "r") as fh:
 setup(
     name='compile-commands',
     version='0.0.1',
+    url="https://github.com/qdewaghe/compile-commands",
+    author="Quentin Dewaghe",
+    author_email="q.dewaghe@gmail.com",
     description='Compilation Database Manipulation Utility',
     long_description=long_description,
     long_description_content_type="text/markdown",
@@ -20,7 +23,7 @@ setup(
     packages=["src"],
     entry_points={
         "console_scripts": [
-            "myscript = src.compile-commands.__main__:main",
+            "myscript = src.compile_commands.__main__:main",
         ],
     },
     extras_require={
