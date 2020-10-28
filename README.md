@@ -22,21 +22,23 @@ compile-commands --dir /path/to/project --merge
 You can also indicate to the LSP server that you prefer using libc++ instead of libstdc++:
 
 ```bash
-compile-commands --file /path/to/project/compile-commands.json --add_flags='-stdlib=libc++'
+compile-commands --file /path/to/project/compile-commands.json \
+                 --add_flags='-stdlib=libc++'
 ```
 
 `--add_flags` takes in a string so you can add multiple flags
 
 ```bash
-compile-commands --file /path/to/project/compile-commands.json --add_flags='-stdlib=libc++ -O0'
+compile-commands --file /path/to/project/compile-commands.json \
+                 --add_flags='-stdlib=libc++ -O0'
 ```
 
 You can combine `--add_flags` with `--run` to monitor warnings as example:
 
 ```bash
 compile-commands --file /path/to/project/compile-commands.json \
-                    --add_flags='-Wall -Wextra -pedantic -fsyntax' \
-                    --run --threads=12
+                 --add_flags='-Wall -Wextra -pedantic -fsyntax' \
+                 --run --threads=12
 ```
 
 You can decide to treat only a subset of your project by using `--filter-files` or `--remove-files`.\
@@ -56,11 +58,11 @@ A good example of that is using [ClangBuildAnalyzer](https://github.com/aras-p/C
 ```bash
 mkdir ftime
 cd ftime
-./compile-commands.py --file=/path/to/project/compile-commands.json 
-                      --add_flags='-ftime-trace' \
-                      --filter='-o .*\\.o' \
-                      --run -j 12
-                      
+./compile-commands --file=/path/to/project/compile-commands.json 
+                   --add_flags='-ftime-trace' \
+                   --filter='-o .*\\.o' \
+                   --run -j 12
+
 # .json and .o files are created in-place!
 ClangBuildAnalyzer --all . capture_file
 ClangBuildAnalyzer --analyze capture_file
