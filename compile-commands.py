@@ -12,10 +12,6 @@ import os
 import re
 
 
-current_module = sys.modules[__name__]
-current_module.dir_name = ""
-
-
 def parse_arguments():
     parser = ArgumentParser(
         description="Utility to manipulate compilation databases.",
@@ -24,11 +20,15 @@ def parse_arguments():
     )
 
     parser.add_argument(
-        "-d",
         "--dir",
-        required=True,
         type=dir_path,
         help="path to target directory",
+    )
+
+    parser.add_argument(
+        "--file",
+        type=str,
+        help="path to compilation database"
     )
 
     parser.add_argument(
@@ -122,12 +122,24 @@ def parse_arguments():
 
     args = parser.parse_args()
 
-    if args.threads != 1 and not args.run:
-        print("warning: --threads (-j) will be ignored since --run was not passed.")
+    if not args.dir and not args.file:
+        print("error: must specified at least --file or --dir")
+        exit(2)
+
+    if args.merge and not args.dir:
+        print("error: --merge requires --dir")
+        exit(2)
 
     if args.clang and args.gcc:
         print("error: --clang and --gcc are incompatible, aborting.")
         exit(2)
+
+    if args.file and args.dir:
+        print("error: --file and --dir are incompatible, aborting.")
+        exit(2)
+
+    if args.threads != 1 and not args.run:
+        print("warning: --threads (-j) will be ignored since --run was not passed.")
 
     return args
 
@@ -149,8 +161,8 @@ def get_compile_dbs(dir: str):
         paths.append(Path(os.path.abspath(str(path))))
 
     # We don't want the compilationDB of the root dir if it exists.
-    paths = [p for p in paths if get_root_dir(
-        str(p)) != current_module.dir_name]
+    paths = [p for p in paths if Path(
+        p).parent.parts[-1] != Path(dir).parts[-1]]
     return paths
 
 
@@ -252,15 +264,18 @@ if __name__ == "__main__":
     if not args.quiet:
         start = time.time()
 
-    current_module.dir_name = Path(args.dir).parts[-1]
-
-    compile_db = "{}/{}".format(remove_trailing(args.dir, "/"), args.output)
-
-    if args.merge:
-        data = merge_json_files(get_compile_dbs(args.dir))
-    else:
-        with open(str(compile_db), "r") as json_file:
+    if args.file:
+        args.dir = str(Path(args.file).parent)
+        with open(str(args.file), "r") as json_file:
             data = json.load(json_file)
+    elif not args.merge:
+        with open(str('{}/compile_commands.json'.format(args.dir)), "r") as json_file:
+            data = json.load(json_file)
+    else:
+        data = merge_json_files(get_compile_dbs(args.dir))
+
+    compile_db = "{}/{}".format(remove_trailing(
+        args.dir, "/"), args.output)
 
     if args.add_flags:
         data = add_flags(data, args.add_flags)
