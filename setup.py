@@ -23,7 +23,7 @@ setup(
     packages=["src"],
     entry_points={
         "console_scripts": [
-            "myscript = src.compile_commands.__main__:main",
+            "compile-commands = src.compile_commands:main",
         ],
     },
     extras_require={
