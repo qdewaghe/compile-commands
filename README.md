@@ -3,6 +3,11 @@
 This utility facilitates the use and modifications of compilation databases. \
 Modifying compilation databases can be useful especially when you don't have control over how a project is built.
 
+## Install
+
+```bash
+pip install compile-commands
+```
 
 ## Usage
 
@@ -40,13 +45,14 @@ compile-commands.py --file /path/to/project/compile-commands.json --filter-files
 ```
 
 You can also filter out parts of the commands based on a regular expression using `--filter`. \
-This is particularly useful when you need to modify the `-o` from the command. \ 
+This is particularly useful when you need to modify the `-o` from the command. 
 A good example of that is using [ClangBuildAnalyzer](https://github.com/aras-p/ClangBuildAnalyzer). 
 
 ```bash
 mkdir ftime
 cd ftime
 ./compile-commands.py --file=/path/to/project/compile-commands.json --add_flags='-ftime-trace' --filter='-o .*\\.o' --run -j 12
+# .json and .o files are created in-place!
 ClangBuildAnalyzer --all . capture_file
 ClangBuildAnalyzer --analyze capture_file
 ```

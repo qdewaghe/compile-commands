@@ -243,7 +243,7 @@ def filter_commands(data, regex, replacement):
     return data
 
 
-if __name__ == "__main__":
+def main():
     args = parse_arguments()
 
     if not args.quiet:
@@ -296,3 +296,7 @@ if __name__ == "__main__":
                 compile_db, len(data), end - start
             )
         )
+
+
+if __name__ == "__main__":
+    main()
