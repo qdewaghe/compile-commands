@@ -21,5 +21,5 @@ jobs:
     - name: Install
       run: | 
         pip install -e .
-    - name: Test with tox
-      run: tox
+    - name: Test with pytest
+      run: pytest
