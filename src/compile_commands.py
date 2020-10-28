@@ -177,7 +177,7 @@ def merge_json_files(paths):
 
 def add_flags(data, flags: str):
     for entry in data:
-        entry["command"] = entry["command"] + ' ' + flags
+        entry["command"] = entry["command"] + " " + flags
     return data
 
 

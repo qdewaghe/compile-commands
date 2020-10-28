@@ -11,29 +11,32 @@ pip install compile-commands
 
 ## Usage
 
+This tool has many possible uses, I'll go through some of them to showcase how it can be used.\
 In a project composed of subprojects where there are multiple build directory, LSP servers often don't handle this kind of project well.\
 You can use this utility to merge the compilation databases. It will find every compilation databases recursively.
 
 ```bash
-compile-commands.py --dir /path/to/project --merge
+compile-commands --dir /path/to/project --merge
 ```
 
 You can also indicate to the LSP server that you prefer using libc++ instead of libstdc++:
 
 ```bash
-compile-commands.py --file /path/to/project/compile-commands.json --add_flags='-stdlib=libc++'
+compile-commands --file /path/to/project/compile-commands.json --add_flags='-stdlib=libc++'
 ```
 
 `--add_flags` takes in a string so you can add multiple flags
 
 ```bash
-compile-commands.py --file /path/to/project/compile-commands.json --add_flags='-stdlib=libc++ -O0'
+compile-commands --file /path/to/project/compile-commands.json --add_flags='-stdlib=libc++ -O0'
 ```
 
 You can combine `--add_flags` with `--run` to monitor warnings as example:
 
 ```bash
-compile-commands.py --file /path/to/project/compile-commands.json --add_flags='-Wall -Wextra -pedantic -fsyntax' --run --threads=12
+compile-commands --file /path/to/project/compile-commands.json \
+                    --add_flags='-Wall -Wextra -pedantic -fsyntax' \
+                    --run --threads=12
 ```
 
 You can decide to treat only a subset of your project by using `--filter-files` or `--remove-files`.\
@@ -41,7 +44,9 @@ You can decide to treat only a subset of your project by using `--filter-files` 
 
 You can as example filter out .c files from the database:
 ```bash 
-compile-commands.py --file /path/to/project/compile-commands.json --filter-files='.*\.c' --remove-files='path/to/file1,path/to/file2'
+compile-commands.py --file /path/to/project/compile-commands.json \
+                    --filter-files='.*\.c' \
+                    --remove-files='path/to/file1,path/to/file2'
 ```
 
 You can also filter out parts of the commands based on a regular expression using `--filter`. \
@@ -51,7 +56,11 @@ A good example of that is using [ClangBuildAnalyzer](https://github.com/aras-p/C
 ```bash
 mkdir ftime
 cd ftime
-./compile-commands.py --file=/path/to/project/compile-commands.json --add_flags='-ftime-trace' --filter='-o .*\\.o' --run -j 12
+./compile-commands.py --file=/path/to/project/compile-commands.json 
+                      --add_flags='-ftime-trace' \
+                      --filter='-o .*\\.o' \
+                      --run -j 12
+                      
 # .json and .o files are created in-place!
 ClangBuildAnalyzer --all . capture_file
 ClangBuildAnalyzer --analyze capture_file
@@ -61,7 +70,11 @@ We add the clang's `-ftime-trace` as required by ClangBuildAnalyzer and remove e
 What if g++ was used during the creation of compilation database ? In this case we can use `--clang` and `--gcc` to switch between the two compilers and even change the path of the compiler with `--compiler_path` if let's say gcc is in `/usr/bin` and the clang we want to use is in `/usr/bin/local`.
 
 ```bash
-./compile-commands.py --file=/path/to/project/compile-commands.json --clang --compiler_path='/usr/bin/local' --add_flags='-ftime-trace' --filter='-o .*\\.o' --run -j 12 
+./compile-commands.py --file=/path/to/project/compile-commands.json \
+                      --clang --compiler_path='/usr/bin/local' \
+                      --add_flags='-ftime-trace' \
+                      --filter='-o .*\\.o' \
+                      --run -j 12 
 ```
 
 `--filter` also accepts a replacement through the `--replacement` flag, it accepts reference to groups within the regular expression as per `re.sub()`
