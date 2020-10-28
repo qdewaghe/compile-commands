@@ -266,7 +266,8 @@ if __name__ == "__main__":
         data = add_flags(data, args.add_flags)
 
     if args.remove_files:
-        data = remove_files(data, args.remove_files.split(","))
+        data = remove_files(data, [x.strip()
+                                   for x in args.remove_files.split(",")])
 
     if args.filter_files:
         data = filter_files(data, args.filter_files)
