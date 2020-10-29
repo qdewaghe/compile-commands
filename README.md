@@ -63,7 +63,7 @@ A good example of that is using [ClangBuildAnalyzer](https://github.com/aras-p/C
 ```bash
 mkdir ftime
 cd ftime
-./compile-commands --file=/path/to/project/compile-commands.json 
+./compile-commands --file=/path/to/project/compile-commands.json \
                    --add_flags='-ftime-trace' \
                    --filter='-o .*\\.o' \
                    --run -j 12
