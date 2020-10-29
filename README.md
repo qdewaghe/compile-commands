@@ -51,9 +51,17 @@ You can decide to treat only a subset of your project by using `--filter-files` 
 
 You can as example filter out .c files from the database:
 ```bash 
-compile-commands.py --file /path/to/project/compile-commands.json \
-                    --filter-files='.*\.c' \
-                    --remove-files='path/to/file1,path/to/file2'
+compile-commands --file /path/to/project/compile-commands.json \
+                 --filter-files='.*\.c$' \
+                 --remove-files='path/to/file1,path/to/file2'
+```
+
+You can use the `-o` flag to specify the name of the output file in case you don't want to overwrite
+```bash 
+compile-commands --file /path/to/project/compile-commands.json \
+                 --filter-files='.*\.c$' \
+                 --remove-files='path/to/file1,path/to/file2' \
+                 -o 'my-db-without-c-files.json'
 ```
 
 You can also filter out parts of the commands based on a regular expression using `--filter`. \
