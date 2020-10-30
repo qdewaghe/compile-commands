@@ -1,4 +1,4 @@
-from compile_commands import remove_files, add_flags, change_compiler_path, remove_trailing, to_clang, to_gcc, filter_files, filter_commands, get_compile_dbs
+from compile_commands import *
 
 DATA = [{
     "directory": "path/to",
@@ -72,6 +72,11 @@ def test_filter_files():
 
 def test_get_compile_dbs():
     assert len(get_compile_dbs('src/tests/compile_commands_tests/')) == 3
+
+
+def test_merge_json_files():
+    assert len(merge_json_files(get_compile_dbs(
+        'src/tests/compile_commands_tests/'))) == 6
 
 
 def test_filter_commands():
