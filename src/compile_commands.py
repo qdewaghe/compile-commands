@@ -155,6 +155,9 @@ def dir_path(path):
 def get_compile_dbs(dir):
     paths = list(glob.glob(
         '{}/**/compile_commands.json'.format(dir), recursive=True))
+
+    paths = [p for p in paths if Path(
+        p).parent.parts[-1] != Path(dir).parts[-1]]
     return paths
 
 
