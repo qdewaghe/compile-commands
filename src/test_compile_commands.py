@@ -71,10 +71,7 @@ def test_filter_files():
 
 
 def test_get_compile_dbs():
-    # should be 3 locally and should be 2 inside github workflow
-    # since it doesn't handle symlinks properly
-    assert (len(get_compile_dbs('tests/compile_commands_tests/')) == 3
-            or len(get_compile_dbs('tests/compile_commands_tests/')) == 2)
+    assert len(get_compile_dbs('src/tests/compile_commands_tests/')) == 3
 
 
 def test_filter_commands():
