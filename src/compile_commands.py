@@ -7,6 +7,7 @@ import concurrent.futures
 import subprocess
 import time
 import json
+import glob
 import sys
 import os
 import re
@@ -144,22 +145,16 @@ def parse_arguments():
     return args
 
 
-def dir_path(path: str):
+def dir_path(path):
     if os.path.isdir(path):
         return path
     else:
         raise NotADirectoryError(path)
 
 
-def get_compile_dbs(dir: str):
-    paths = []
-    for path in Path(dir).rglob("compile_commands.json"):
-        paths.append(Path(os.path.abspath(str(path))))
-
-    # We don't want the compilationDBs of the root dir if any
-    # because we assume that they're user generated
-    paths = [p for p in paths if Path(
-        p).parent.parts[-1] != Path(dir).parts[-1]]
+def get_compile_dbs(dir):
+    paths = list(glob.glob(
+        '{}/**/compile_commands.json'.format(dir), recursive=True))
     return paths
 
 
@@ -249,14 +244,14 @@ def main():
         start = time.time()
 
     if args.file:
-        args.dir = str(Path(args.file).parent)
+        args.dir = str(Path(os.path.abspath(args.file)).parent)
         with open(str(args.file), "r") as json_file:
             data = json.load(json_file)
     elif not args.merge:
         with open(str('{}/compile_commands.json'.format(args.dir)), "r") as json_file:
             data = json.load(json_file)
     else:
-        data = merge_json_files(get_compile_dbs(args.dir))
+        data = merge_json_files(get_compile_dbs(os.path.abspath(args.dir)))
 
     compile_db = "{}/{}".format(remove_trailing(
         args.dir, "/"), args.output)
