@@ -1,4 +1,4 @@
-from compile_commands import remove_files, add_flags, change_compiler_path, remove_trailing, to_clang, to_gcc, filter_files, filter_commands
+from compile_commands import remove_files, add_flags, change_compiler_path, remove_trailing, to_clang, to_gcc, filter_files, filter_commands, get_compile_dbs
 
 DATA = [{
     "directory": "path/to",
@@ -68,6 +68,10 @@ def test_filter_files():
     assert len(filter_files(DATA, "file")) == 0
     assert len(filter_files(DATA, "\\.cpp$")) == 2
     assert len(filter_files(DATA, "\\.c$")) == 2
+
+
+def test_get_compile_dbs():
+    assert len(get_compile_dbs('src/tests/compile_commands_tests/')) == 3
 
 
 def test_filter_commands():
