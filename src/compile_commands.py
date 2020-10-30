@@ -5,9 +5,9 @@ from subprocess import Popen
 from argparse import ArgumentParser, RawTextHelpFormatter
 import concurrent.futures
 import subprocess
+import glob2
 import time
 import json
-import glob
 import sys
 import os
 import re
@@ -153,7 +153,7 @@ def dir_path(path):
 
 
 def get_compile_dbs(dir):
-    paths = list(glob.glob(
+    paths = list(glob2.glob(
         '{}/**/compile_commands.json'.format(dir), recursive=True))
 
     paths = [p for p in paths if Path(
