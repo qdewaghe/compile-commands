@@ -121,6 +121,13 @@ def parse_arguments():
         help="print stats at the end of the execution.",
     )
 
+    parser.add_argument(
+        "--allow_duplicates",
+        default=False,
+        action="store_true",
+        help="by default duplicated files are deleted."
+    )
+
     args = parser.parse_args()
 
     if not args.dir and not args.file:
@@ -152,10 +159,25 @@ def dir_path(path):
         raise NotADirectoryError(path)
 
 
+def symlink_to_path(path):
+    if os.path.islink(path):
+        return os.readlink(path)
+    else:
+        return path
+
+
 def get_compile_dbs(dir):
     paths = list(glob2.glob(
         '{}/**/compile_commands.json'.format(dir), recursive=True))
 
+    # Since we take into account symlinks we have to make sure the symlinks
+    # doesn't resolve to a file that we already take into account
+    paths = list(set([symlink_to_path(os.path.abspath(p)) for p in paths]))
+
+    # Make sure we don't take into account a file in the root directory
+    # if the file in the root directory is a symlink to a build folder
+    # it will still be taken into account as long as the build folder
+    # is inside the tree
     paths = [p for p in paths if Path(
         p).parent.parts[-1] != Path(dir).parts[-1]]
     return paths
@@ -254,7 +276,7 @@ def main():
         with open(str('{}/compile_commands.json'.format(args.dir)), "r") as json_file:
             data = json.load(json_file)
     else:
-        data = merge_json_files(get_compile_dbs(os.path.abspath(args.dir)))
+        data = merge_json_files(get_compile_dbs(args.dir))
 
     compile_db = "{}/{}".format(remove_trailing(
         args.dir, "/"), args.output)
@@ -283,8 +305,15 @@ def main():
     if args.run:
         execute(data, args.threads, args.quiet)
 
-    with open(str(compile_db), "w") as json_file:
-        json.dump(data, json_file, indent=4, sort_keys=False)
+    if not args.allow_duplicates:
+        data = [dict(t) for t in {tuple(d.items()) for d in data}]
+
+    if len(data) > 0:
+        with open(str(compile_db), "w") as json_file:
+            json.dump(data, json_file, indent=4, sort_keys=False)
+    else:
+        print("no commands found.")
+        exit(1)
 
     if not args.quiet:
         end = time.time()
