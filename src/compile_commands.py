@@ -16,7 +16,7 @@ import re
 def parse_arguments():
     parser = ArgumentParser(
         description="Utility to manipulate compilation databases.",
-        usage="./compile-commands.py --dir=DIR",
+        usage="compile-commands --file=FILE",
         formatter_class=RawTextHelpFormatter,
     )
 
