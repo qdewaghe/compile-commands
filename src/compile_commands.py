@@ -231,9 +231,10 @@ def to_gcc(data):
 
 
 def run(args, index, total, quiet):
-    print("[{}/{}]".format(index + 1, total))
     if quiet:
         args += " --quiet"
+    else:
+        print("[{}/{}]".format(index + 1, total))
     Popen(args, shell=True).wait()
 
 
@@ -302,9 +303,6 @@ def main():
     elif args.gcc:
         data = to_gcc(data)
 
-    if args.run:
-        execute(data, args.threads, args.quiet)
-
     if not args.allow_duplicates:
         data = [dict(t) for t in {tuple(d.items()) for d in data}]
 
@@ -322,6 +320,9 @@ def main():
                 compile_db, len(data), end - start
             )
         )
+
+    if args.run:
+        execute(data, args.threads, args.quiet)
 
 
 if __name__ == "__main__":
