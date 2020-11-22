@@ -231,9 +231,7 @@ def to_gcc(data):
 
 
 def run(args, index, total, quiet):
-    if quiet:
-        args += " --quiet"
-    else:
+    if not quiet:
         print("[{}/{}]".format(index + 1, total))
     Popen(args, shell=True).wait()
 
