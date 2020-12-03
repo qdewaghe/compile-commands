@@ -4,11 +4,9 @@ from pathlib import Path
 from subprocess import Popen
 from argparse import ArgumentParser, RawTextHelpFormatter
 import concurrent.futures
-import subprocess
 import glob2
 import time
 import json
-import sys
 import os
 import re
 
