@@ -128,7 +128,17 @@ def parse_arguments():
         help="by default duplicated files are deleted."
     )
 
+    parser.add_argument(
+        "--version",
+        action="store_true",
+        help="prints the version"
+    )
+
     args = parser.parse_args()
+
+    if args.version:
+        print('compile-commands: 1.1.2')
+        exit(0)
 
     if not args.dir and not args.file:
         print("error: must specified at least --file or --dir")
