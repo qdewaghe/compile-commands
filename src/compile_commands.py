@@ -135,7 +135,7 @@ def parse_arguments():
     args = parser.parse_args()
 
     if args.version:
-        print('compile-commands: 1.1.2')
+        print('compile-commands: 1.1.3')
         exit(0)
 
     if not args.dir and not args.file:
@@ -186,9 +186,8 @@ def get_compile_dbs(dir):
     # if the file in the root directory is a symlink to a build folder
     # it will still be taken into account as long as the build folder
     # is inside the tree
-    paths = [p for p in paths if Path(
+    return [p for p in paths if Path(
         p).parent.parts[-1] != Path(dir).parts[-1]]
-    return paths
 
 
 def remove_files(data, files):
@@ -271,19 +270,26 @@ def filter_commands(data, regex, replacement):
 
 def main():
     args = parse_arguments()
+    start = time.time()
 
-    if not args.quiet:
-        start = time.time()
+    if args.dir:
+        args.dir = os.path.abspath(args.dir)
 
     if args.file:
         args.dir = str(Path(os.path.abspath(args.file)).parent)
-        with open(str(args.file), "r") as json_file:
-            data = json.load(json_file)
-    elif not args.merge:
-        with open(str('{}/compile_commands.json'.format(args.dir)), "r") as json_file:
-            data = json.load(json_file)
-    else:
+
+    data = []
+    if args.merge:
         data = merge_json_files(get_compile_dbs(args.dir))
+    else:
+        # if --merge is not set we use existing data inside the specified directory
+        filepath = '{}/compile_commands.json'.format(args.dir)
+        try:
+            with open(filepath, "r") as json_file:
+                data = json.load(json_file)
+        except:
+            print('{} not found. Did you forget --merge?'.format(filepath))
+            exit(2)
 
     compile_db = "{}/{}".format(remove_trailing(
         args.dir, "/"), args.output)
@@ -312,6 +318,8 @@ def main():
     if not args.allow_duplicates:
         data = [dict(t) for t in {tuple(d.items()) for d in data}]
 
+    overwrote = os.path.isfile(compile_db)
+
     if len(data) > 0:
         with open(str(compile_db), "w") as json_file:
             json.dump(data, json_file, indent=4, sort_keys=False)
@@ -321,9 +329,13 @@ def main():
 
     if not args.quiet:
         end = time.time()
+
         print(
-            "{} created with {} commands in {}s.".format(
-                compile_db, len(data), end - start
+            "{} {} with {} command(s) in {}s.".format(
+                compile_db,
+                'updated' if overwrote else 'created',
+                len(data),
+                round(end - start, 4)
             )
         )
 
