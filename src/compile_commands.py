@@ -167,24 +167,30 @@ def dir_path(path):
         raise NotADirectoryError(path)
 
 
-def symlink_to_path(path):
-    if os.path.islink(path):
-        return os.readlink(path)
-    else:
-        return path
-
-
 def get_compile_dbs(dir):
+    # TODO:
+    # Replace this call by something that stop the recursion for a given directory
+    # once the file has been found (BFS)
+    # e.g:
+    #    .
+    #    ├── component1
+    #    │   ├── build1
+    #    │   │   └── compile_commands.json
+    #    │   ├── build2
+    #    │   │   └── compile_commands.json
+    #    │   └── some_directory //visit because it could be a build directory
+    #    |       └── another_directory //do not visit
+    #    ...
     paths = list(glob2.glob(
         '{}/**/compile_commands.json'.format(dir), recursive=True))
 
     # Since we take into account symlinks we have to make sure the symlinks
     # doesn't resolve to a file that we already take into account
-    paths = list(set([symlink_to_path(os.path.abspath(p)) for p in paths]))
+    paths = list(set([os.path.realpath(os.path.abspath(p)) for p in paths]))
 
     # Make sure we don't take into account a file in the root directory
-    # if the file in the root directory is a symlink to a build folder
-    # it will still be taken into account as long as the build folder
+    # if the file in the root directory is a symlink to a build directory
+    # it will still be taken into account as long as the build directory
     # is inside the tree
     return [p for p in paths if Path(
         p).parent.parts[-1] != Path(dir).parts[-1]]
