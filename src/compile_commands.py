@@ -174,10 +174,10 @@ def get_compile_dbs(dir):
     # e.g:
     #    .
     #    ├── component1
-    #    │   ├── build1
-    #    │   │   └── compile_commands.json
-    #    │   ├── build2
-    #    │   │   └── compile_commands.json
+    #    │   ├── build_Release
+    #    │   │   └── compile_commands.json // TODO:
+    #    │   ├── build_Debug               // Add logic to be able to choose in between two CDB
+    #    │   │   └── compile_commands.json // that are on the same level
     #    │   └── some_directory //visit because it could be a build directory
     #    |       └── another_directory //do not visit
     #    ...
