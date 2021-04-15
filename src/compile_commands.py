@@ -65,6 +65,20 @@ def parse_arguments():
     )
 
     parser.add_argument(
+        "--include_files",
+        default="",
+        type=str,
+        help="comma-seperated list of files to be included",
+    )
+
+    parser.add_argument(
+        "--path_prefix",
+        default="",
+        type=str,
+        help="file path prefix of include_files and remove_files",
+    )
+
+    parser.add_argument(
         "--add_flags",
         type=str,
         help="add the argument to each commands as text",
@@ -124,6 +138,12 @@ def parse_arguments():
         default=False,
         action="store_true",
         help="by default duplicated files are deleted."
+    )
+
+    parser.add_argument(
+        "--force_write",
+        default=False,
+        help="force write compile commands even when compile commands list is empty"
     )
 
     parser.add_argument(
@@ -199,6 +219,8 @@ def get_compile_dbs(dir):
 def remove_files(data, files):
     return [d for d in data if d["file"] not in files]
 
+def include_files(data, files):
+    return [d for d in data if d["file"] in files]
 
 def merge_json_files(paths):
     data = []
@@ -304,8 +326,12 @@ def main():
         data = add_flags(data, args.add_flags)
 
     if args.remove_files:
-        data = remove_files(data, [x.strip()
+        data = remove_files(data, [args.path_prefix + x.strip()
                                    for x in args.remove_files.split(",")])
+
+    if args.include_files:
+        data = include_files(data, [args.path_prefix + x.strip()
+                                   for x in args.include_files.split(",")])
 
     if args.filter_files:
         data = filter_files(data, args.filter_files)
@@ -331,7 +357,11 @@ def main():
             json.dump(data, json_file, indent=4, sort_keys=False)
     else:
         print("no commands found.")
-        exit(1)
+        if args.force_write:
+            with open(str(compile_db), "w") as json_file:
+                json.dump(data, json_file, indent=4, sort_keys=False)
+        else:
+            exit(1)
 
     if not args.quiet:
         end = time.time()

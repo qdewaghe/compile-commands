@@ -50,14 +50,25 @@ You can decide to treat only a subset of your project by using `--filter-files` 
 `--filter-files` takes in a regular expression whereas `--remove-files` takes in a comma-separated list of absolute paths.
 
 You can as example filter out .c files from the database:
+
 ```bash 
 compile-commands --file /path/to/project/compile-commands.json \
                  --filter-files='.*\.c$' \
                  --remove-files='path/to/file1,path/to/file2'
 ```
 
-You can use the `-o` flag to specify the name of the output file in case you don't want to overwrite
+You can decide to treat only a subset of your project by using `--include-files` which takes in a comma-separated list of absolute paths, which means compile-commands file will just include files listed in this option, by using `--path-prefix` which means path prefix of remove files list and include file list
+
+You can as example filter out .c files from the database:
+
 ```bash 
+compile-commands --file /path/to/project/compile-commands.json \
+                 --include-files='path/to/file1,path/to/file2'
+```
+
+You can use the `-o` flag to specify the name of the output file in case you don't want to overwrite
+
+```bash
 compile-commands --file /path/to/project/compile-commands.json \
                  --filter-files='.*\.c$' \
                  --remove-files='path/to/file1,path/to/file2' \
