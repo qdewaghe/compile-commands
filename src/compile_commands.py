@@ -13,7 +13,9 @@ import re
 
 def parse_arguments():
     parser = ArgumentParser(
-        description="Utility to manipulate compilation databases.",
+        description="""
+        Utility to manipulate compilation databases. (CDB)
+        https://github.com/qdewaghe/compile-commands""",
         usage="compile-commands --file=FILE",
         formatter_class=RawTextHelpFormatter,
     )
@@ -27,14 +29,15 @@ def parse_arguments():
     parser.add_argument(
         "--file",
         type=str,
-        help="path to compilation database"
+        help="path to compilation database",
     )
 
     parser.add_argument(
         "-m",
         "--merge",
         action="store_true",
-        help="find all compile-commands.json files in --dir recursively, if not only the root directory will be considered",
+        help=("find all compile-commands.json files in --dir recursively and merges them,"
+              "\nif not set only the CDB in the root directory will be considered"),
     )
 
     parser.add_argument(
@@ -61,14 +64,14 @@ def parse_arguments():
         "--remove_files",
         default="",
         type=str,
-        help="comma-seperated list of files to be removed",
+        help="comma-separated list of files to be removed from the CDB",
     )
 
     parser.add_argument(
         "--include_files",
         default="",
         type=str,
-        help="comma-seperated list of files to be included",
+        help="comma-separated list of files to keep in the CDB (every other files will be removed)",
     )
 
     parser.add_argument(
@@ -183,11 +186,10 @@ def parse_arguments():
 def dir_path(path):
     if os.path.isdir(path):
         return path
-    else:
-        raise NotADirectoryError(path)
+    raise NotADirectoryError(path)
 
 
-def get_compile_dbs(dir):
+def get_compile_dbs(directory):
     # TODO:
     # Replace this call by something that stop the recursion for a given directory
     # once the file has been found (BFS)
@@ -202,7 +204,7 @@ def get_compile_dbs(dir):
     #    |       └── another_directory //do not visit
     #    ...
     paths = list(glob2.glob(
-        '{}/**/compile_commands.json'.format(dir), recursive=True))
+        '{}/**/compile_commands.json'.format(directory), recursive=True))
 
     # Since we take into account symlinks we have to make sure the symlinks
     # doesn't resolve to a file that we already take into account
@@ -213,7 +215,7 @@ def get_compile_dbs(dir):
     # it will still be taken into account as long as the build directory
     # is inside the tree
     return [p for p in paths if Path(
-        p).parent.parts[-1] != Path(dir).parts[-1]]
+        p).parent.parts[-1] != Path(directory).parts[-1]]
 
 
 def remove_files(data, files):

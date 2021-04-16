@@ -1,6 +1,6 @@
 # Compilation Database Manipulation Utility
 
-This utility facilitates the use and modifications of compilation databases. \
+This utility facilitates the use and modifications of compilation databases (CDB). \
 Modifying compilation databases can be useful especially when you don't have control over how a project is built.
 
 ## Install
@@ -57,9 +57,7 @@ compile-commands --file /path/to/project/compile-commands.json \
                  --remove-files='path/to/file1,path/to/file2'
 ```
 
-You can decide to treat only a subset of your project by using `--include-files` which takes in a comma-separated list of absolute paths, which means compile-commands file will just include files listed in this option, by using `--path-prefix` which means path prefix of remove files list and include file list
-
-You can as example filter out .c files from the database:
+You can decide to treat only a subset of your project by using `--include_files` which takes in a comma-separated list of absolute paths. You can also prefix each paths passed to `--include_files` and `--remove_files` by using `--path-prefix`.
 
 ```bash 
 compile-commands --file /path/to/project/compile-commands.json \
