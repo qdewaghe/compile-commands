@@ -30,6 +30,11 @@ def test_remove_files():
         DATA, str("path/to/file1.c,path/to/file2.cpp").split(","))) == 2
     assert len(remove_files(DATA, "path/to/doesnotexist.c")) == 4
 
+def test_include_files():
+    assert len(include_files(DATA, "path/to/file2.cpp")) == 1
+    assert len(include_files(
+        DATA, str("path/to/file1.c,path/to/file2.cpp").split(","))) == 2
+    assert len(include_files(DATA, "path/to/doesnotexist.c")) == 0
 
 def test_add_flags():
     data = add_flags(DATA, "-flag")
