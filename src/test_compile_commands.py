@@ -42,8 +42,8 @@ def test_include_files():
     assert len(include_files(DATA, "path/to/doesnotexist.c")) == 0
 
 
-def test_fix_include_paths():
-    data = fix_include_paths(DATA)
+def test_absolute_include_paths():
+    data = absolute_include_paths(DATA)
 
     print(data[0]["command"])
     assert data[0]["command"].endswith("-I/path/to/build/directory/..")
