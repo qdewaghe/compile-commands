@@ -154,6 +154,7 @@ def parse_arguments():
     parser.add_argument(
         "--absolute_include_paths",
         default=False,
+        action="store_true",
         help="If the include paths inside the commands are relative, make them absolute.",
     )
 
