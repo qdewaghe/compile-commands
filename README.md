@@ -101,9 +101,6 @@ What if g++ was used during the creation of compilation database ? In this case 
                       --run -j 12 
 ```
 
-`--filter` also accepts a replacement through the `--replacement` flag, it accepts reference to groups within the regular expression as per `re.sub()`
+`--filter` also accepts a replacement through the `--replacement` flag, it accepts reference to groups within the regular expression as per `re.sub()`. `--filter` is also useful to remove flags that are not compatible with both compilers.
 
-`--filter` is also useful to remove flags that are not compatible with both compilers.
-
-
-
+If you are a user of the Ninja buildsystem you might notice that the above example does not work. That is because generating a CDB through Cmake using Ninja as the generator will result in having relative include paths within the CDB (relative to "directory" that is). This is inconvenient because the above effectively moves the build directory but does not move dependencies. To fix that you can use `--absolute_include_paths` which will try to modify relative includes paths into absolute include paths. 
