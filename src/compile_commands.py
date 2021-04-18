@@ -3,12 +3,12 @@
 from pathlib import Path
 from subprocess import Popen
 from argparse import ArgumentParser, RawTextHelpFormatter
+from glob import glob
 import concurrent.futures
 import re
 import time
 import json
 import os
-import glob2
 
 
 def parse_arguments():
@@ -163,7 +163,7 @@ def parse_arguments():
     args = parser.parse_args()
 
     if args.version:
-        print("compile-commands: 1.1.3")
+        print("compile-commands: 1.1.5")
         exit(0)
 
     if not args.dir and not args.file:
@@ -195,31 +195,15 @@ def dir_path(path):
 
 
 def get_compile_dbs(directory):
-    # TODO:
-    # Replace this call by something that stop the recursion for a given directory
-    # once the file has been found (BFS)
-    # e.g:
-    #    .
-    #    ├── component1
-    #    │   ├── build_Release
-    #    │   │   └── compile_commands.json // TODO:
-    #    │   ├── build_Debug               // Add logic to be able to choose in between two CDB
-    #    │   │   └── compile_commands.json // that are on the same level
-    #    │   └── some_directory //visit because it could be a build directory
-    #    |       └── another_directory //do not visit
-    #    ...
     paths = list(
-        glob2.glob("{}/**/compile_commands.json".format(directory), recursive=True)
+        glob(f"{os.path.abspath(directory)}/**/compile_commands.json", recursive=True)
     )
 
     # Since we take into account symlinks we have to make sure the symlinks
     # doesn't resolve to a file that we already take into account
-    paths = list(set([os.path.realpath(os.path.abspath(p)) for p in paths]))
+    paths = list(set([os.path.realpath(p) for p in paths]))
 
-    # Make sure we don't take into account a file in the root directory
-    # if the file in the root directory is a symlink to a build directory
-    # it will still be taken into account as long as the build directory
-    # is inside the tree
+    # Making sure to ignore a compile_commands.json in the root directory
     return [p for p in paths if Path(p).parent.parts[-1] != Path(directory).parts[-1]]
 
 

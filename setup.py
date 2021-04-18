@@ -6,7 +6,7 @@ with open("README.md", "r") as fh:
 
 setup(
     name="compile-commands",
-    version="1.1.4",
+    version="1.1.5",
     url="https://github.com/qdewaghe/compile-commands",
     author="Quentin Dewaghe",
     author_email="q.dewaghe@gmail.com",
@@ -19,15 +19,14 @@ setup(
         "Operating System :: POSIX :: Linux",
         "Natural Language :: English",
     ],
-    python_requires=">=3.4",
+    python_requires=">=3.8",
     packages=["src"],
-    install_requires=["glob2"],
     entry_points={
         "console_scripts": [
             "compile-commands = src.compile_commands:main",
         ],
     },
     extras_require={
-        "dev": ["pytest>=3.7"],
+        "dev": ["pytest>=6.2"],
     },
 )
