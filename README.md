@@ -11,7 +11,7 @@ pip install compile-commands
 
 ## Requirements
 
-Requires at least python 3.4. 
+Requires at least python 3.8
 
 ## Usage
 
