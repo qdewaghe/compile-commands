@@ -163,7 +163,7 @@ def parse_arguments():
     args = parser.parse_args()
 
     if args.version:
-        print("compile-commands: 1.1.5")
+        print("compile-commands: 1.1.6")
         exit(0)
 
     if not args.dir and not args.file:
