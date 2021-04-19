@@ -21,6 +21,7 @@ setup(
     ],
     python_requires=">=3.8",
     packages=["src"],
+    install_requires=["glob2"],
     entry_points={
         "console_scripts": [
             "compile-commands = src.compile_commands:main",

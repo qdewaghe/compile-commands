@@ -3,7 +3,7 @@
 from pathlib import Path
 from subprocess import Popen
 from argparse import ArgumentParser, RawTextHelpFormatter
-from glob import glob
+from glob2 import glob
 import concurrent.futures
 import re
 import time
@@ -195,9 +195,7 @@ def dir_path(path):
 
 
 def get_compile_dbs(directory):
-    paths = list(
-        glob(f"{os.path.abspath(directory)}/**/compile_commands.json", recursive=True)
-    )
+    paths = list(glob(f"{os.path.abspath(directory)}/**/compile_commands.json"))
 
     # Since we take into account symlinks we have to make sure the symlinks
     # doesn't resolve to a file that we already take into account
