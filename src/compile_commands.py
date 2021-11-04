@@ -22,6 +22,7 @@ def parse_arguments():
 
     parser.add_argument(
         "--dir",
+        default=os.getcwd(),
         type=dir_path,
         help="path to target directory",
     )
@@ -33,12 +34,20 @@ def parse_arguments():
     )
 
     parser.add_argument(
+        "--files",
+        nargs="+",
+        type=str,
+        help="path to compilations databases, implies --merge.",
+    )
+
+    parser.add_argument(
         "-m",
         "--merge",
         action="store_true",
         help=(
             "find all compile-commands.json files in --dir recursively and merges them,"
             "\nif not set only the CDB in the root directory will be considered"
+            "\nNote that it may be relatively slow for big hierarchies. In which case you should use --files"
         ),
     )
 
@@ -163,23 +172,11 @@ def parse_arguments():
     args = parser.parse_args()
 
     if args.version:
-        print("compile-commands: 1.1.6")
+        print("compile-commands: 1.1.7")
         exit(0)
-
-    if not args.dir and not args.file:
-        print("error: must specified at least --file or --dir")
-        exit(2)
-
-    if args.merge and not args.dir:
-        print("error: --merge requires --dir")
-        exit(2)
 
     if args.clang and args.gcc:
         print("error: --clang and --gcc are incompatible, aborting.")
-        exit(2)
-
-    if args.file and args.dir:
-        print("error: --file and --dir are incompatible, aborting.")
         exit(2)
 
     if args.threads != 1 and not args.run:
@@ -232,7 +229,7 @@ def change_compiler_path(data, new_path: str):
         compiler_path = entry["command"].split(" ")[0]
         compiler = Path(compiler_path).parts[-1]
 
-        new_path = remove_trailing(new_path, "/")
+        new_path = os.path.normpath(new_path + "/")
 
         entry["command"] = entry["command"].replace(
             compiler_path, new_path + "/" + compiler
@@ -258,7 +255,7 @@ def to_gcc(data):
 
 def run(args, index, total, quiet):
     if not quiet:
-        print("[{}/{}]".format(index + 1, total))
+        print(f"[{index + 1}/{total}]")
     Popen(args, shell=True).wait()
 
 
@@ -296,12 +293,6 @@ def absolute_include_paths(data):
     return data
 
 
-def remove_trailing(string: str, to_remove: str):
-    if string.endswith(to_remove):
-        return string[: -len(to_remove)]
-    return string
-
-
 def filter_files(data, regex: str):
     return [d for d in data if not re.search(regex, d["file"], re.IGNORECASE)]
 
@@ -314,31 +305,23 @@ def filter_commands(data, regex, replacement):
     return data
 
 
-def main():
-    args = parse_arguments()
-    start = time.time()
+def normalize_cdb(data):
+    if len(data) == 0:
+        return
 
-    if args.dir:
-        args.dir = os.path.abspath(args.dir)
+    # We don't assume that if one entry has no "argument"
+    # then none of them have, because in the case that
+    # CDB are merged, they might have different origins
+    for entry in data:
+        if (args := entry.get("arguments")) is not None:
+            print(args)
+            entry["command"] = " ".join(args)
+            entry["arguments"] = None
 
-    if args.file:
-        args.dir = str(Path(os.path.abspath(args.file)).parent)
+    return data
 
-    data = []
-    if args.merge:
-        data = merge_json_files(get_compile_dbs(args.dir))
-    else:
-        # if --merge is not set we use existing data inside the specified directory
-        filepath = "{}/compile_commands.json".format(args.dir)
-        try:
-            with open(filepath, "r") as json_file:
-                data = json.load(json_file)
-        except:
-            print("{} not found. Did you forget --merge?".format(filepath))
-            exit(2)
 
-    compile_db = "{}/{}".format(remove_trailing(args.dir, "/"), args.output)
-
+def process_cdb(args, data):
     if args.add_flags:
         data = add_flags(data, args.add_flags)
 
@@ -372,25 +355,53 @@ def main():
     if args.absolute_include_paths:
         data = absolute_include_paths(data)
 
-    overwrote = os.path.isfile(compile_db)
+    return data
 
-    if len(data) > 0:
-        with open(str(compile_db), "w") as json_file:
+
+def main():
+    args = parse_arguments()
+    start = time.time()
+
+    if args.file:
+        args.dir = str(Path(os.path.abspath(args.file)).parent)
+
+    args.dir = os.path.normpath(args.dir)
+
+    data = []
+    if args.merge or args.files:
+        if not args.files:
+            args.files = get_compile_dbs(args.dir)
+        data = merge_json_files(args.files)
+    else:
+        # if --merge is not set we use existing data inside the specified directory
+        filepath = f"{args.dir}/compile_commands.json"
+        try:
+            with open(filepath, "r") as json_file:
+                data = json.load(json_file)
+        except:
+            print(f"{filepath} not found. Did you forget --merge?")
+            exit(2)
+
+    output_cdb = f"{args.dir}/{args.output}"
+    overwrote = os.path.isfile(output_cdb)
+
+    data = normalize_cdb(data)
+    data = process_cdb(args, data)
+
+    if len(data) > 0 or args.force_write:
+        with open(str(output_cdb), "w") as json_file:
             json.dump(data, json_file, indent=4, sort_keys=False)
     else:
-        print("no commands found.")
-        if args.force_write:
-            with open(str(compile_db), "w") as json_file:
-                json.dump(data, json_file, indent=4, sort_keys=False)
-        else:
-            exit(1)
+        print("The output compilation database has no commands.")
+        print("Use --force-write to generate it anyway.")
+        exit(1)
 
     if not args.quiet:
         end = time.time()
 
         print(
             "{} {} with {} command(s) in {}s.".format(
-                compile_db,
+                output_cdb,
                 "updated" if overwrote else "created",
                 len(data),
                 round(end - start, 4),
@@ -398,6 +409,7 @@ def main():
         )
 
     if args.run:
+        print("Executing all commands, this may take a while...")
         execute(data, args.threads, args.quiet)
 
 

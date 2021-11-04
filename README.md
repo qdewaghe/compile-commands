@@ -24,6 +24,14 @@ This is particularly useful for LSP servers that don't handle these projects wel
 compile-commands --dir /path/to/project --merge
 ```
 
+This may be slow if the project is big one alternative would to specify "by hand" the compilation databases with `--files`. 
+
+``` bash
+compile-commands --files $(fd compile_commands.json)
+compile-commands --files myproject1/build/compile_commands.json myproject2/build/compile_commands.json
+```
+Here, `--merge` is implied and it will output by default in the current working directory. `--dir` can still be used to change the output location. Note that `-o` only changes the name of the output file.
+
 You can also indicate to the LSP server that you prefer using libc++ instead of libstdc++ even if your buildsystem doesn't use it.
 
 ```bash

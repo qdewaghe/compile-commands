@@ -58,11 +58,6 @@ def test_add_flags():
         assert "-flag" in entry["command"]
 
 
-def test_remove_trailing():
-    assert remove_trailing("/usr/bin/", "/") == "/usr/bin"
-    assert remove_trailing("/usr/bin", "/") == "/usr/bin"
-
-
 def test_to_gcc():
     data = to_gcc(DATA)
     assert data[0]["command"].startswith("/usr/bin/gcc")
@@ -108,3 +103,21 @@ def test_filter_commands():
         assert "-o" not in entry["command"] and "output" not in entry["command"]
         assert "-o" not in entry["command"] and "output" not in entry["command"]
         assert "-o" not in entry["command"] and "output" not in entry["command"]
+
+
+def test_normalize_cdb():
+
+    data = [
+        {"file": "somefile.cpp", "command": "command", "dir": "somedir"},
+        {
+            "file": "somefile.cpp",
+            "arguments": ["gcc", "somefile", "-Iinclude", "-o", "someoutput"],
+        },
+    ]
+
+    data = normalize_cdb(data)
+    for entry in data:
+        assert entry.get("command") is not None
+        assert entry.get("arguments") is None
+
+    assert data[1]["command"] == "gcc somefile -Iinclude -o someoutput"

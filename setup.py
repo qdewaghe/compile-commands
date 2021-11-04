@@ -6,7 +6,7 @@ with open("README.md", "r") as fh:
 
 setup(
     name="compile-commands",
-    version="1.1.6",
+    version="1.1.7",
     url="https://github.com/qdewaghe/compile-commands",
     author="Quentin Dewaghe",
     author_email="q.dewaghe@gmail.com",
