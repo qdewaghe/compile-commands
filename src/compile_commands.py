@@ -365,7 +365,7 @@ def main():
     if args.file:
         args.dir = str(Path(os.path.abspath(args.file)).parent)
 
-    args.dir = os.path.normpath(args.dir)
+    args.dir = os.path.normpath(os.path.abspath(args.dir))
 
     data = []
     if args.merge or args.files:
