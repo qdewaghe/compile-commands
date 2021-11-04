@@ -9,7 +9,7 @@ jobs:
       matrix:
         platform:
           - ubuntu-20.04
-        python-version: [3.8, 3.9, pypy3]
+        python-version: [3.8, 3.9]
 
     steps:
     - uses: actions/checkout@v1
