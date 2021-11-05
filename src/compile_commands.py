@@ -4,6 +4,7 @@ from pathlib import Path
 from subprocess import Popen
 from argparse import ArgumentParser, RawTextHelpFormatter
 from glob2 import glob
+import shlex
 import concurrent.futures
 import re
 import time
@@ -314,9 +315,8 @@ def normalize_cdb(data):
     # CDB are merged, they might have different origins
     for entry in data:
         if (args := entry.get("arguments")) is not None:
-            print(args)
-            entry["command"] = " ".join(args)
-            entry["arguments"] = None
+            entry["command"] = shlex.join(args)
+            del entry["arguments"]
 
     return data
 

@@ -113,11 +113,16 @@ def test_normalize_cdb():
             "file": "somefile.cpp",
             "arguments": ["gcc", "somefile", "-Iinclude", "-o", "someoutput"],
         },
+        {
+            "file": "somefile.cpp",
+            "arguments": ["command", "with spaces!"],
+        },
     ]
 
     data = normalize_cdb(data)
     for entry in data:
         assert entry.get("command") is not None
-        assert entry.get("arguments") is None
+        assert entry.get("arguments", 0) == 0
 
     assert data[1]["command"] == "gcc somefile -Iinclude -o someoutput"
+    assert data[2]["command"] == "command 'with spaces!'"
