@@ -184,6 +184,13 @@ def parse_arguments():
         help="Normalize every path if needed.",
     )
 
+    parser.add_argument(
+        "--to_arguments",
+        default=False,
+        action="store_true",
+        help="Replace 'command' tags with 'arguments' tags in the CDB",
+    )
+
     parser.add_argument("--version", action="store_true", help="prints the version")
 
     args = parser.parse_args()
@@ -412,6 +419,16 @@ def normalize_cdb(data):
 
     return data
 
+def to_arguments(data):
+    if len(data) == 0:
+        return
+
+    for entry in data:
+        if (cmd := entry.get("command")) is not None:
+            entry["arguments"] = shlex.split(cmd)
+            del entry["command"]
+
+    return data
 
 def process_cdb(args, data):
     if args.add_flags:
@@ -452,6 +469,9 @@ def process_cdb(args, data):
 
     if not args.allow_duplicates:
         data = [dict(t) for t in {tuple(d.items()) for d in data}]
+
+    if args.to_arguments:
+        data = to_arguments(data)
 
     return data
 

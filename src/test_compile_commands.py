@@ -31,7 +31,6 @@ DATA = [
     }
 ]
 
-
 def test_remove_files():
     data = copy.deepcopy(DATA)
     assert len(remove_files(data, "path/to/file2.cpp")) == 4
@@ -192,3 +191,29 @@ def test_normalize_cdb():
 
     assert data[1]["command"] == "gcc somefile -Iinclude -o someoutput"
     assert data[2]["command"] == "command 'with spaces!'"
+
+def test_to_arguments():
+    data = [
+        {"file": "somefile.cpp", "command": "command", "dir": "somedir"},
+        {
+            "file": "somefile.cpp",
+            "command" : "gcc somefile -Iinclude -o someoutput",
+        },
+        {
+            "file": "somefile.cpp",
+            "command" : "command 'with spaces!'"            
+        },
+    ]
+
+    data = to_arguments(data)
+    for entry in data:
+        assert entry.get("arguments") is not None
+        assert entry.get("command", None) is None
+
+    assert len(data[1]["arguments"]) == 5
+    for index, elt in enumerate(["gcc", "somefile", "-Iinclude", "-o", "someoutput"]):
+        assert data[1]["arguments"][index] == elt, f"at index {index}"
+
+    assert len(data[2]["arguments"]) == 2
+    for index, elt in enumerate(["command", "with spaces!"]):
+        assert data[2]["arguments"][index] == elt, f"at index {index}"
