@@ -1,4 +1,4 @@
-import sys
+import copy
 
 from compile_commands import *
 
@@ -27,25 +27,28 @@ DATA = [
 
 
 def test_remove_files():
-    assert len(remove_files(DATA, "path/to/file2.cpp")) == 3
+    data = copy.deepcopy(DATA)
+    assert len(remove_files(data, "path/to/file2.cpp")) == 3
     assert (
-        len(remove_files(DATA, str("path/to/file1.c,path/to/file2.cpp").split(",")))
+        len(remove_files(data, str("path/to/file1.c,path/to/file2.cpp").split(",")))
         == 2
     )
-    assert len(remove_files(DATA, "path/to/doesnotexist.c")) == 4
+    assert len(remove_files(data, "path/to/doesnotexist.c")) == 4
 
 
 def test_include_files():
-    assert len(include_files(DATA, "path/to/file2.cpp")) == 1
+    data = copy.deepcopy(DATA)
+    assert len(include_files(data, "path/to/file2.cpp")) == 1
     assert (
-        len(include_files(DATA, str("path/to/file1.c,path/to/file2.cpp").split(",")))
+        len(include_files(data, str("path/to/file1.c,path/to/file2.cpp").split(",")))
         == 2
     )
-    assert len(include_files(DATA, "path/to/doesnotexist.c")) == 0
+    assert len(include_files(data, "path/to/doesnotexist.c")) == 0
 
 
 def test_absolute_include_paths():
-    data = absolute_include_paths(DATA)
+    data = copy.deepcopy(DATA)
+    data = absolute_include_paths(data)
 
     print(data[0]["command"])
     assert data[0]["command"].endswith("-I/path/to/build/directory/..")
@@ -55,13 +58,15 @@ def test_absolute_include_paths():
 
 
 def test_add_flags():
-    data = add_flags(DATA, "-flag")
+    data = copy.deepcopy(DATA)
+    data = add_flags(data, "-flag")
     for entry in data:
         assert "-flag" in entry["command"]
 
 
 def test_to_gcc():
-    data = to_gcc(DATA)
+    data = copy.deepcopy(DATA)
+    data = to_gcc(data)
     assert data[0]["command"].startswith("/usr/bin/gcc")
     assert data[1]["command"].startswith("/usr/bin/g++")
     assert data[2]["command"].startswith("/usr/bin/g++")
@@ -69,7 +74,8 @@ def test_to_gcc():
 
 
 def test_to_clang():
-    data = to_clang(DATA)
+    data = copy.deepcopy(DATA)
+    data = to_clang(data)
     assert data[0]["command"].startswith("/usr/bin/clang")
     assert data[1]["command"].startswith("/usr/bin/clang++")
     assert data[2]["command"].startswith("/usr/bin/clang++")
@@ -77,15 +83,17 @@ def test_to_clang():
 
 
 def test_change_compiler_path():
-    data = change_compiler_path(DATA, "/usr/local/bin/")
+    data = copy.deepcopy(DATA)
+    data = change_compiler_path(data, "/usr/local/bin/")
     for entry in data:
         assert entry["command"].startswith(f"{os.sep}{os.path.join('usr', 'local', 'bin')}")
 
 
 def test_filter_files():
-    assert len(filter_files(DATA, "file")) == 0
-    assert len(filter_files(DATA, "\\.cpp$")) == 2
-    assert len(filter_files(DATA, "\\.c$")) == 2
+    data = copy.deepcopy(DATA)
+    assert len(filter_files(data, "file")) == 0
+    assert len(filter_files(data, "\\.cpp$")) == 2
+    assert len(filter_files(data, "\\.c$")) == 2
 
 
 def test_get_compile_dbs():
@@ -99,7 +107,8 @@ def test_merge_json_files():
 
 
 def test_filter_commands():
-    data = filter_commands(DATA, "-o .*\\.o", "")
+    data = copy.deepcopy(DATA)
+    data = filter_commands(data, "-o .*\\.o", "")
 
     for entry in data:
         assert "-o" not in entry["command"] and "output" not in entry["command"]
