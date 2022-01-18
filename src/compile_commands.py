@@ -168,6 +168,14 @@ def parse_arguments():
         help="If the include paths inside the commands are relative, make them absolute.",
     )
 
+    parser.add_argument(
+        "--normalize_paths",
+        default=False,
+        action="store_true",
+        help="Normalize every path if needed.",
+    )
+
+
     parser.add_argument("--version", action="store_true", help="prints the version")
 
     args = parser.parse_args()
@@ -268,6 +276,9 @@ def execute(data, threads, quiet):
             executor.submit(run, entry["command"], index, total, quiet)
 
 
+def absolute_path(root, path):
+    return re.sub(r'^(?!([a-zA-Z]\:|\\|\/))(.*)$', lambda pattern : f"{root}{re.escape(os.sep)}{pattern.group(2)}", path)
+
 def absolute_include_paths(data):
     for entry in data:
         directory = entry["directory"]
@@ -293,6 +304,52 @@ def absolute_include_paths(data):
         )
     return data
 
+
+def _is_switch(token):
+    return token.strip().startswith('-')
+
+def _to_include_path(token):
+    res = re.search(r"^(-I|-iquote|-isystem|-idirafter)(?=\S)(.*)$", token.strip())
+    if res is None:
+        return (None, None)
+    else:
+        return (res.group(1), res.group(2))
+
+def _is_normalizable(path):
+    return re.search(r"(^|\/|\\)\.($|(\/|\\))|(^|\/|\\)\.\.($|(\/|\\))", path.strip())
+
+def _try_normalize_with_root(root, path):
+    if _is_normalizable(path):
+        return os.path.normpath(absolute_path(root, path))
+    else:
+        return path
+
+def _try_normalize(path):
+    
+    if _is_normalizable(path):
+        return os.path.normpath(path)
+    else:
+        return path
+
+def normalize_paths(data):
+    for entry in data:
+        directory = _try_normalize(entry["directory"])
+        entry['directory'] = directory
+        entry["file"] = _try_normalize_with_root(directory, entry["file"])
+
+        original_args = shlex.split(entry["command"])
+        processed_args = []
+        for a in original_args:
+            if  _is_switch(a):
+                opt, path = _to_include_path(a)
+                if opt is None:
+                    processed_args.append(a)
+                else:
+                    processed_args.append(f"{opt}{_try_normalize_with_root(directory, path)}")                    
+            else:
+                processed_args.append(_try_normalize_with_root(directory, a))
+        entry["command"] =  shlex.join(processed_args)
+    return data
 
 def filter_files(data, regex: str):
     return [d for d in data if not re.search(regex, d["file"], re.IGNORECASE)]
@@ -325,6 +382,12 @@ def process_cdb(args, data):
     if args.add_flags:
         data = add_flags(data, args.add_flags)
 
+    if args.absolute_include_paths:
+        data = absolute_include_paths(data)
+    
+    if args.normalize_paths:
+        data = normalize_paths(data)
+
     if args.remove_files:
         data = remove_files(
             data, [args.path_prefix + x.strip() for x in args.remove_files.split(",")]
@@ -337,6 +400,7 @@ def process_cdb(args, data):
 
     if args.filter_files:
         data = filter_files(data, args.filter_files)
+
 
     if args.filter:
         data = filter_commands(data, args.filter, args.replacement)
@@ -352,8 +416,6 @@ def process_cdb(args, data):
     if not args.allow_duplicates:
         data = [dict(t) for t in {tuple(d.items()) for d in data}]
 
-    if args.absolute_include_paths:
-        data = absolute_include_paths(data)
 
     return data
 
@@ -364,7 +426,7 @@ def main():
 
     if args.file:
         args.dir = str(Path(os.path.abspath(args.file)).parent)
-
+        
     args.dir = os.path.normpath(os.path.abspath(args.dir))
 
     data = []
