@@ -482,8 +482,8 @@ def main():
 
     if args.file:
         args.dir = str(Path(os.path.abspath(args.file)).parent)
-        
-    args.dir = os.path.normpath(os.path.abspath(args.dir))
+    else:
+        args.dir = os.path.normpath(os.path.abspath(args.dir))
 
     data = []
     if args.merge or args.files:
@@ -492,7 +492,10 @@ def main():
         data = merge_json_files(args.files)
     else:
         # if --merge is not set we use existing data inside the specified directory
-        filepath = f"{args.dir}/compile_commands.json"
+        if args.file:
+            filepath = args.file
+        else:
+            filepath = f"{args.dir}/compile_commands.json"
         try:
             with open(filepath, "r") as json_file:
                 data = json.load(json_file)
