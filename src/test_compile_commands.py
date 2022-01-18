@@ -6,17 +6,17 @@ from compile_commands import *
 DATA = [
     {
         "directory": "/path/to/build/directory",
-        "command": "/usr/bin/gcc path/to/file1.c -o path/to/output.o -I..",
+        "command": "/usr/bin/gcc path/to/file1.c -Dtest -o path/to/output.o -I..",
         "file": "path/to/file1.c",
     },
     {
         "directory": "/path/to/build/directory",
-        "command": "/usr/bin/g++ path/to/file2.cpp -o path/to/output.o -iquote .",
+        "command": "/usr/bin/g++ path/to/file2.cpp -Dtest=0 -o path/to/output.o -iquote .",
         "file": "path/to/file2.cpp",
     },
     {
         "directory": "/path/to/build/directory",
-        "command": "/usr/bin/clang++ path/to/file3.cpp -o path/to/output.o -Isomething",
+        "command": "/usr/bin/clang++ path/to/file3.cpp -D key=value -o path/to/output.o -Isomething",
         "file": "path/to/file3.cpp",
     },
     {
@@ -80,22 +80,24 @@ def test_normalize_paths():
     args = shlex.split(data[0]["command"])
     assert args[0] == "/usr/bin/gcc"
     assert args[1] == f"path/to/file1.c"
-    assert args[2] == "-o"
-    assert args[3] == f"path/to/output.o"
-    assert args[4] == f"-I{os.sep}path{os.sep}to{os.sep}build"
+    assert args[2] == "-Dtest"
+    assert args[3] == "-o"
+    assert args[4] == f"path/to/output.o"
+    assert args[5] == f"-I{os.sep}path{os.sep}to{os.sep}build"
     
     assert data[1]["directory"] == "/path/to/build/directory"
     assert data[1]["file"] == "path/to/file2.cpp"
     args = shlex.split(data[1]["command"])
     assert args[0] == "/usr/bin/g++"
     assert args[1] == "path/to/file2.cpp"
-    assert args[2] == "-o"
-    assert args[3] == "path/to/output.o"
-    assert args[4] == "-iquote"
-    assert args[5] == f"{os.sep}path{os.sep}to{os.sep}build{os.sep}directory"
+    assert args[2] == "-Dtest=0"
+    assert args[3] == "-o"
+    assert args[4] == "path/to/output.o"
+    assert args[5] == "-iquote"
+    assert args[6] == f"{os.sep}path{os.sep}to{os.sep}build{os.sep}directory"
     
     assert data[2]["directory"] == "/path/to/build/directory"
-    assert data[2]["command"] == "/usr/bin/clang++ path/to/file3.cpp -o path/to/output.o -Isomething"
+    assert data[2]["command"] == "/usr/bin/clang++ path/to/file3.cpp -D key=value -o path/to/output.o -Isomething"
     assert data[2]["file"] == "path/to/file3.cpp"
 
     assert data[3]["directory"] == "/path/to/build/directory"
@@ -135,6 +137,27 @@ def test_to_clang():
     assert data[2]["command"].startswith("/usr/bin/clang++")
     assert data[3]["command"].startswith("/usr/bin/clang")
 
+def test_list_includes():
+    data = copy.deepcopy(DATA)
+    includes = list_includes(data)
+    includes.sort()
+    assert len(includes) == 5
+    assert includes[0] == '.'
+    assert includes[1] == '..'
+    assert includes[2] == '/path/to/build/directory/include'
+    assert includes[3] == 'somestuff/..'
+    assert includes[4] == 'something'
+
+def test_list_definitions():
+    data = copy.deepcopy(DATA)
+    definitions = list_definitions(data)
+    assert len(definitions) == 2
+    assert len(definitions['test']) == 2
+    assert '0' in definitions['test']
+    assert None in definitions['test']
+    assert definitions['key'] == {'value'}
+    assert len(definitions['missing']) == 0
+    
 
 def test_change_compiler_path():
     data = copy.deepcopy(DATA)

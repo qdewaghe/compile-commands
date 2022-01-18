@@ -3,13 +3,20 @@
 from pathlib import Path
 from subprocess import Popen
 from argparse import ArgumentParser, RawTextHelpFormatter
+from typing import AnyStr
 from glob2 import glob
+from collections import defaultdict
 import shlex
 import concurrent.futures
 import re
 import time
 import json
 import os
+import sys
+
+DEFINITION_OPTS = {'-D','/D'}
+_DEFINITION_OPTS_REGEX = f"({'|'.join(DEFINITION_OPTS)})"
+_DEFINITION_REGEX = r"(?P<key>\w+)\s*=?\s*(?P<value>.+)?"
 
 INCLUDE_OPTS = {'-I','-iquote','-isystem','idirafter'}
 _INCLUDE_OPTS_REGEX = f"({'|'.join(INCLUDE_OPTS)})"
@@ -86,6 +93,20 @@ def parse_arguments():
         default="",
         type=str,
         help="regular expression that will filter out matching includes",
+    )
+
+    parser.add_argument(
+        "--list_includes",
+        default="",
+        action="store_true",
+        help="List include directories on standard output",
+    )
+
+    parser.add_argument(
+        "--list_definitions",
+        default="",
+        action="store_true",
+        help="List definitions on standard output",
     )
 
     parser.add_argument(
@@ -200,11 +221,11 @@ def parse_arguments():
         exit(0)
 
     if args.clang and args.gcc:
-        print("error: --clang and --gcc are incompatible, aborting.")
+        print("error: --clang and --gcc are incompatible, aborting.", file=sys.stderr)
         exit(2)
 
     if args.threads != 1 and not args.run:
-        print("warning: --threads (-j) will be ignored since --run was not passed.")
+        print("warning: --threads (-j) will be ignored since --run was not passed.", file=sys.stderr)
 
     return args
 
@@ -275,6 +296,58 @@ def filter_includes(data, includes_regex : str):
         entry["command"] =  shlex.join(processed_args)
     return data
 
+def parse_definition(definition : AnyStr):
+    match = re.search(_DEFINITION_REGEX, definition)
+    if match:
+        return (match['key'],match['value'])
+    else:
+        return None, None
+
+def list_definitions(data):
+    definitions = defaultdict(set)
+    for entry in data:
+        args = shlex.split(entry["command"])        
+        define_opt = None
+        for a in args:            
+            # Termination of the use case with spaces `-D def`
+            if define_opt:           
+                key, value = parse_definition(a)     
+                definitions[key].add(value)
+                define_opt = None
+            elif  _is_switch(a):
+                # Begin the use case with spaces `-D def`
+                if a in DEFINITION_OPTS:
+                    define_opt = a
+                # Use case without space `-Ddef`    
+                else:
+                    opt, path = _extract_definition(a)
+                    if opt is not None:
+                        key, value = parse_definition(path) 
+                        definitions[key].add(value)
+    return definitions
+
+def list_includes(data):
+    includes = set()
+    for entry in data:
+        args = shlex.split(entry["command"])        
+        include_opt = None
+
+        for a in args:            
+            # Termination of the use case with spaces `-I include`
+            if include_opt:                
+                includes.add(a.strip())
+                include_opt = None
+            elif  _is_switch(a):
+                # Begin the use case with spaces `-I include`
+                if a in INCLUDE_OPTS:
+                    include_opt = a
+                # Use case without space `-Iinclude`    
+                else:
+                    opt, path = _to_include_path(a)
+                    if opt is not None:
+                        includes.add(path)
+    return list(includes)
+
 def change_compiler_path(data, new_path: str):
     for entry in data:
         compiler_path = entry["command"].split(" ")[0]
@@ -306,7 +379,7 @@ def to_gcc(data):
 
 def run(args, index, total, quiet):
     if not quiet:
-        print(f"[{index + 1}/{total}]")
+        print(f"[{index + 1}/{total}]", file=sys.stderr)
     Popen(args, shell=True).wait()
 
 
@@ -349,6 +422,13 @@ def absolute_include_paths(data):
 
 def _is_switch(token):
     return token.strip().startswith('-')
+
+def _extract_definition(token):
+    res = re.search(rf"^{_DEFINITION_OPTS_REGEX}(?=\S)(.*)$", token.strip())
+    if res is None:
+        return (None, None)
+    else:
+        return (res.group(1), res.group(2))
 
 def _to_include_path(token):
     res = re.search(rf"^{_INCLUDE_OPTS_REGEX}(?=\S)(.*)$", token.strip())
@@ -404,6 +484,17 @@ def filter_commands(data, regex, replacement):
         )
     return data
 
+def print_includes(data):
+    for i in list_includes(data):
+        print(i)
+
+def print_definitions(data):
+    for key, vals in list_definitions(data).items():
+        for v in vals:
+            if v:
+                print(f'{key}={v}')
+            else:
+                print(key)
 
 def normalize_cdb(data):
     if len(data) == 0:
@@ -470,6 +561,12 @@ def process_cdb(args, data):
     if not args.allow_duplicates:
         data = [dict(t) for t in {tuple(d.items()) for d in data}]
 
+    if args.list_includes:
+        print_includes(data)
+
+    if args.list_definitions:
+        print_definitions(data)
+
     if args.to_arguments:
         data = to_arguments(data)
 
@@ -500,7 +597,8 @@ def main():
             with open(filepath, "r") as json_file:
                 data = json.load(json_file)
         except:
-            print(f"{filepath} not found. Did you forget --merge?")
+            print(f"{filepath} not found. Did you forget --merge?",
+                file=sys.stderr)
             exit(2)
 
     output_cdb = f"{args.dir}/{args.output}"
@@ -513,8 +611,10 @@ def main():
         with open(str(output_cdb), "w") as json_file:
             json.dump(data, json_file, indent=4, sort_keys=False)
     else:
-        print("The output compilation database has no commands.")
-        print("Use --force-write to generate it anyway.")
+        print("The output compilation database has no commands.",
+            file=sys.stderr)
+        print("Use --force-write to generate it anyway.",
+            file=sys.stderr)
         exit(1)
 
     if not args.quiet:
@@ -527,10 +627,13 @@ def main():
                 len(data),
                 round(end - start, 4),
             )
+            ,
+            file=sys.stderr
         )
 
     if args.run:
-        print("Executing all commands, this may take a while...")
+        print("Executing all commands, this may take a while...",
+            file=sys.stderr)
         execute(data, args.threads, args.quiet)
 
 
