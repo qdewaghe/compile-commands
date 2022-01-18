@@ -1,3 +1,5 @@
+import sys
+
 from compile_commands import *
 
 DATA = [
@@ -77,7 +79,7 @@ def test_to_clang():
 def test_change_compiler_path():
     data = change_compiler_path(DATA, "/usr/local/bin/")
     for entry in data:
-        assert entry["command"].startswith("/usr/local/bin/")
+        assert entry["command"].startswith(f"{os.sep}{os.path.join('usr', 'local', 'bin')}")
 
 
 def test_filter_files():
