@@ -26,10 +26,11 @@ DATA = [
     },
     {
         "directory": "/path/to/build/gone_too_far/../directory/2.2.1.0-beta",
-        "command": "/usr/bin/gcc path/to/gone_too_far/../file5.c -o path/to/output.o -Isometing/..",
+        "command": "/usr/bin/gcc path/to/gone_too_far/../file5.c -o path/to/output.o -Isomestuff/..",
         "file": "path/to/gone_too_far/../file5.c",
     }
 ]
+
 
 def test_remove_files():
     data = copy.deepcopy(DATA)
@@ -50,6 +51,15 @@ def test_include_files():
     )
     assert len(include_files(data, "path/to/doesnotexist.c")) == 0
 
+def test_filter_includes():
+    data = copy.deepcopy(DATA)
+    data = filter_includes(data, '(build|something)')
+
+    assert data[0]["command"].endswith("-I..")
+    assert data[1]["command"].endswith("-iquote .")
+    assert data[2]["command"].endswith("-o path/to/output.o")
+    assert data[3]["command"].endswith("-o path/to/output.o")
+    assert data[4]["command"].endswith("-Isomestuff/..")
 
 def test_absolute_include_paths():
     data = copy.deepcopy(DATA)
@@ -59,9 +69,8 @@ def test_absolute_include_paths():
     assert data[1]["command"].endswith("-iquote /path/to/build/directory/.")
     assert data[2]["command"].endswith("-I/path/to/build/directory/something")
     assert data[3]["command"].endswith("-isystem /path/to/build/directory/include")
-    assert data[4]["command"].endswith("-I/path/to/build/gone_too_far/../directory/2.2.1.0-beta/someting/..")
+    assert data[4]["command"].endswith("-I/path/to/build/gone_too_far/../directory/2.2.1.0-beta/somestuff/..")
 
- 
 
 def test_normalize_paths():
     data = copy.deepcopy(DATA)

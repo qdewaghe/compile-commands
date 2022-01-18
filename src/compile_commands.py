@@ -11,6 +11,8 @@ import time
 import json
 import os
 
+INCLUDE_OPTS = {'-I','-iquote','-isystem','idirafter'}
+_INCLUDE_OPTS_REGEX = f"({'|'.join(INCLUDE_OPTS)})"
 
 def parse_arguments():
     parser = ArgumentParser(
@@ -77,6 +79,13 @@ def parse_arguments():
         default="",
         type=str,
         help="comma-separated list of files to be removed from the CDB",
+    )
+
+    parser.add_argument(
+        "--filter_includes",
+        default="",
+        type=str,
+        help="regular expression that will filter out matching includes",
     )
 
     parser.add_argument(
@@ -175,7 +184,6 @@ def parse_arguments():
         help="Normalize every path if needed.",
     )
 
-
     parser.add_argument("--version", action="store_true", help="prints the version")
 
     args = parser.parse_args()
@@ -232,6 +240,33 @@ def add_flags(data, flags: str):
         entry["command"] = entry["command"] + " " + flags
     return data
 
+def filter_includes(data, includes_regex : str):
+    for entry in data:
+        original_args = shlex.split(entry["command"])
+        processed_args = []
+        include_opt = None
+
+        for a in original_args:            
+            # Termination of the use case with spaces `-I include`
+            if include_opt:                
+                if re.search(includes_regex, a) is None:
+                    processed_args.append(include_opt)
+                    processed_args.append(a)
+                include_opt = None
+            elif  _is_switch(a):
+                # Begin the use case with spaces `-I include`
+                if a in INCLUDE_OPTS:
+                    include_opt = a
+                # Use case without space `-Iinclude`    
+                else:
+                    opt, path = _to_include_path(a)
+                    if opt is None or re.search(includes_regex, path) is None:
+                        processed_args.append(a)    
+            else:
+                processed_args.append(a)               
+
+        entry["command"] =  shlex.join(processed_args)
+    return data
 
 def change_compiler_path(data, new_path: str):
     for entry in data:
@@ -293,12 +328,12 @@ def absolute_include_paths(data):
         # is indeed relative by verifying that the first char is not a '/'.
         # There is probably a better way to do this.
         command = re.sub(
-            r"(-I|-iquote|-isystem|-idirafter)(?=\s)(\s+)(?=[^\/])([^\/]\S*)",
+            rf"{_INCLUDE_OPTS_REGEX}(?=\s)(\s+)(?=[^\/])([^\/]\S*)",
             f"\\1\\2{directory}/\\3",
             command,
         )
         entry["command"] = re.sub(
-            r"(-I|-iquote|-isystem|-idirafter)(?=\S)(?=[^\/])([^\/]\S*)",
+            rf"{_INCLUDE_OPTS_REGEX}(?=\S)(?=[^\/])([^\/]\S*)",
             f"\\1{directory}/\\2",
             command,
         )
@@ -309,7 +344,7 @@ def _is_switch(token):
     return token.strip().startswith('-')
 
 def _to_include_path(token):
-    res = re.search(r"^(-I|-iquote|-isystem|-idirafter)(?=\S)(.*)$", token.strip())
+    res = re.search(rf"^{_INCLUDE_OPTS_REGEX}(?=\S)(.*)$", token.strip())
     if res is None:
         return (None, None)
     else:
@@ -400,7 +435,9 @@ def process_cdb(args, data):
 
     if args.filter_files:
         data = filter_files(data, args.filter_files)
-
+        
+    if args.filter_includes:
+        data = filter_includes(data, args.filter_includes)
 
     if args.filter:
         data = filter_commands(data, args.filter, args.replacement)
@@ -415,7 +452,6 @@ def process_cdb(args, data):
 
     if not args.allow_duplicates:
         data = [dict(t) for t in {tuple(d.items()) for d in data}]
-
 
     return data
 
