@@ -3,8 +3,8 @@
 from typing import Any
 from pathlib import Path
 from subprocess import Popen
-from argparse import ArgumentParser, RawTextHelpFormatter
 from glob2 import glob
+from .arguments import parse_arguments
 
 import shlex
 import concurrent.futures
@@ -12,186 +12,6 @@ import re
 import time
 import json
 import os
-
-
-def parse_arguments():
-    parser = ArgumentParser(
-        description="""
-        Utility to manipulate compilation databases. (CDB)
-        https://github.com/qdewaghe/compile-commands""",
-        usage="compile-commands --file=FILE",
-        formatter_class=RawTextHelpFormatter,
-    )
-
-    parser.add_argument(
-        "--dir",
-        default=os.getcwd(),
-        type=dir_path,
-        help="path to target directory",
-    )
-
-    parser.add_argument(
-        "--file",
-        type=str,
-        help="path to compilation database",
-    )
-
-    parser.add_argument(
-        "--files",
-        nargs="+",
-        type=str,
-        help="path to compilations databases, implies --merge.",
-    )
-
-    parser.add_argument(
-        "-m",
-        "--merge",
-        action="store_true",
-        help=(
-            "find all compile-commands.json files in --dir recursively and merges them,"
-            "\nif not set only the CDB in the root directory will be considered"
-            "\nNote that it may be relatively slow for big hierarchies. In which case you should use --files"
-        ),
-    )
-
-    parser.add_argument(
-        "--filter_files",
-        type=str,
-        help="regular expression that will filter out matching files",
-    )
-
-    parser.add_argument(
-        "-o",
-        "--output",
-        type=str,
-        default="compile_commands.json",
-        help="name for the output file, defaults to compile_commands.json",
-    )
-
-    parser.add_argument(
-        "--compiler_path",
-        type=dir_path,
-        help="change the compiler path (e.g. --compiler_path='/usr/local/bin')",
-    )
-
-    parser.add_argument(
-        "--remove_files",
-        default="",
-        type=str,
-        help="comma-separated list of files to be removed from the CDB",
-    )
-
-    parser.add_argument(
-        "--include_files",
-        default="",
-        type=str,
-        help="comma-separated list of files to keep in the CDB (every other files will be removed)",
-    )
-
-    parser.add_argument(
-        "--path_prefix",
-        default="",
-        type=str,
-        help="file path prefix of include_files and remove_files",
-    )
-
-    parser.add_argument(
-        "--add_flags",
-        type=str,
-        help="add the argument to each commands as text",
-    )
-
-    parser.add_argument(
-        "--filter",
-        type=str,
-        help="regular expression that will filter matches from each command",
-    )
-
-    parser.add_argument(
-        "--replacement",
-        type=str,
-        default="",
-        help="replacement for matches of --filter, can reference groups matched.",
-    )
-
-    parser.add_argument(
-        "--run",
-        default=False,
-        action="store_true",
-        help="execute each commands listed in the resulting file",
-    )
-
-    parser.add_argument(
-        "--clang",
-        default=False,
-        action="store_true",
-        help="replace 'gcc' and 'g++' by 'clang' and 'clang++' respectively in each commands.",
-    )
-
-    parser.add_argument(
-        "--gcc",
-        default=False,
-        action="store_true",
-        help="replace 'clang' and 'clang++' by 'gcc' and 'g++' respectively in each commands",
-    )
-
-    parser.add_argument(
-        "-j",
-        "--threads",
-        help="number of threads for --run, defaults to 1",
-        type=int,
-        default=1,
-    )
-
-    parser.add_argument(
-        "--quiet",
-        default=False,
-        action="store_true",
-        help="print stats at the end of the execution.",
-    )
-
-    parser.add_argument(
-        "--allow_duplicates",
-        default=False,
-        action="store_true",
-        help="by default duplicated files are deleted.",
-    )
-
-    parser.add_argument(
-        "--force_write",
-        default=False,
-        help="force write compile commands even when compile commands list is empty",
-    )
-
-    parser.add_argument(
-        "--absolute_include_paths",
-        default=False,
-        action="store_true",
-        help="If the include paths inside the commands are relative, make them absolute.",
-    )
-
-    parser.add_argument("--version", action="store_true", help="prints the version")
-
-    args = parser.parse_args()
-
-    if args.version:
-        print("compile-commands: 1.1.7")
-        exit(0)
-
-    if args.clang and args.gcc:
-        print("error: --clang and --gcc are incompatible, aborting.")
-        exit(2)
-
-    if args.threads != 1 and not args.run:
-        print("warning: --threads (-j) will be ignored since --run was not passed.")
-
-    return args
-
-
-def dir_path(path):
-    if os.path.isdir(path):
-        return path
-    raise NotADirectoryError(path)
 
 
 def get_compile_dbs(directory):
@@ -351,7 +171,7 @@ def process_cdb(args, data):
     elif args.gcc:
         data = to_gcc(data)
 
-    if not args.allow_duplicates:
+    if args.disallow_duplicates:
         data = [dict(t) for t in {tuple(d.items()) for d in data}]
 
     if args.absolute_include_paths:
