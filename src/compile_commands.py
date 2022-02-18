@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 
+from typing import Any
 from pathlib import Path
 from subprocess import Popen
 from argparse import ArgumentParser, RawTextHelpFormatter
 from glob2 import glob
+
 import shlex
 import concurrent.futures
 import re
@@ -306,9 +308,9 @@ def filter_commands(data, regex, replacement):
     return data
 
 
-def normalize_cdb(data):
+def normalize_cdb(data) -> list[Any]:
     if len(data) == 0:
-        return
+        return []
 
     # We don't assume that if one entry has no "argument"
     # then none of them have, because in the case that
@@ -385,8 +387,8 @@ def main():
     output_cdb = f"{args.dir}/{args.output}"
     overwrote = os.path.isfile(output_cdb)
 
-    data = normalize_cdb(data)
-    data = process_cdb(args, data)
+    data: list[Any] = normalize_cdb(data)
+    data: list[Any] = process_cdb(args, data)
 
     if len(data) > 0 or args.force_write:
         with open(str(output_cdb), "w") as json_file:

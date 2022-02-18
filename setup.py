@@ -1,6 +1,5 @@
 from setuptools import setup
 
-
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
@@ -28,6 +27,6 @@ setup(
         ],
     },
     extras_require={
-        "dev": ["pytest>=6.2"],
+        "dev": ["pytest", "glob2", "setuptools"],
     },
 )
