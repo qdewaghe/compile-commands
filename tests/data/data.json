@@ -1,0 +1,22 @@
+[
+        {
+            "directory": "/path/to/build/directory",
+            "command": "/usr/bin/gcc path/to/file1.c -o path/to/output.o -I..",
+            "file": "path/to/file1.c"
+        },
+        {
+            "directory": "/path/to/build/directory",
+            "command": "/usr/bin/g++ path/to/file2.cpp -o path/to/output.o -iquote .",
+            "file": "path/to/file2.cpp"
+        },
+        {
+            "directory": "/path/to/build/directory",
+            "command": "/usr/bin/clang++ path/to/file3.cpp -o path/to/output.o -Isomething",
+            "file": "path/to/file3.cpp"
+        },
+        {
+            "directory": "/path/to/build/directory",
+            "command": "/usr/bin/clang path/to/file4.c -o path/to/output.o -isystem /path/to/build/directory/include",
+            "file": "path/to/file4.c"
+        }
+]

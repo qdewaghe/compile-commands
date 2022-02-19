@@ -4,7 +4,7 @@ from typing import Any
 from pathlib import Path
 from subprocess import Popen
 from glob2 import glob
-from .arguments import parse_arguments
+from src.arguments import parse_arguments
 
 import shlex
 import concurrent.futures
@@ -180,7 +180,7 @@ def process_cdb(args, data):
     return data
 
 
-def main():
+def main() -> int:
     args = parse_arguments()
     start = time.time()
 
@@ -202,7 +202,7 @@ def main():
                 data = json.load(json_file)
         except:
             print(f"{filepath} not found. Did you forget --merge?")
-            exit(2)
+            return 2
 
     output_cdb = f"{args.dir}/{args.output}"
     overwrote = os.path.isfile(output_cdb)
@@ -216,7 +216,7 @@ def main():
     else:
         print("The output compilation database has no commands.")
         print("Use --force-write to generate it anyway.")
-        exit(1)
+        return 1
 
     if not args.quiet:
         end = time.time()
@@ -234,6 +234,8 @@ def main():
         print("Executing all commands, this may take a while...")
         execute(data, args.threads, args.quiet)
 
+    return 0
+
 
 if __name__ == "__main__":
-    main()
+    exit(main())

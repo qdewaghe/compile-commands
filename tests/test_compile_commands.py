@@ -1,31 +1,19 @@
-from compile_commands import *
+from pathlib import Path
+from src.compile_commands import *
+
 import pytest
+import json
 
 
 @pytest.fixture
-def cdb():
-    return [
-        {
-            "directory": "/path/to/build/directory",
-            "command": "/usr/bin/gcc path/to/file1.c -o path/to/output.o -I..",
-            "file": "path/to/file1.c",
-        },
-        {
-            "directory": "/path/to/build/directory",
-            "command": "/usr/bin/g++ path/to/file2.cpp -o path/to/output.o -iquote .",
-            "file": "path/to/file2.cpp",
-        },
-        {
-            "directory": "/path/to/build/directory",
-            "command": "/usr/bin/clang++ path/to/file3.cpp -o path/to/output.o -Isomething",
-            "file": "path/to/file3.cpp",
-        },
-        {
-            "directory": "/path/to/build/directory",
-            "command": "/usr/bin/clang path/to/file4.c -o path/to/output.o -isystem /path/to/build/directory/include",
-            "file": "path/to/file4.c",
-        },
-    ]
+def current_path() -> Path:
+    return Path(__file__).parent.resolve()
+
+
+@pytest.fixture
+def cdb(current_path: Path):
+    with open(current_path / "data/data.json", "r") as f:
+        return json.loads(f.read())
 
 
 def test_remove_files(cdb):
@@ -89,13 +77,18 @@ def test_filter_files(cdb):
     assert len(filter_files(cdb, "\\.c$")) == 2
 
 
-def test_get_compile_dbs():
-    assert len(get_compile_dbs("src/tests/compile_commands_tests/")) == 3
+def test_get_compile_dbs(current_path: Path) -> None:
+    assert len(get_compile_dbs(current_path / "data/compile_commands_tests")) == 3
 
 
-def test_merge_json_files():
+def test_merge_json_files(current_path: Path) -> None:
     assert (
-        len(merge_json_files(get_compile_dbs("src/tests/compile_commands_tests/"))) == 6
+        len(
+            merge_json_files(
+                get_compile_dbs(current_path / "data/compile_commands_tests")
+            )
+        )
+        == 6
     )
 
 
