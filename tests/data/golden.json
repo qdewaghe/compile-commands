@@ -1,32 +1,27 @@
 [
     {
+        "command": "/usr/bin/clang++ file.cxx -O3",
         "directory": "/home/user/code",
-        "command": "/usr/bin/clang++ file.cc",
-        "file": "file.cc"
+        "file": "file.cxx"
     },
     {
+        "command": "/usr/bin/clang file.c -I/home/user/code/.. -O3",
         "directory": "/home/user/code",
-        "command": "/usr/bin/clang++ file.cc",
-        "file": "file.cc"
+        "file": "file.c"
     },
     {
+        "command": "/usr/bin/g++ file.cpp -iquote /tmp/ -O3",
         "directory": "/home/user/code",
-        "command": "/usr/bin/clang++ file.cc",
-        "file": "file.cc"
+        "file": "file.cpp"
     },
     {
+        "command": "/usr/bin/clang++ file.cpp -O3",
         "directory": "/home/user/code",
-        "command": "/usr/bin/clang++ file.cc",
-        "file": "file.cc"
+        "file": "file.cpp"
     },
     {
+        "command": "/usr/bin/clang file.c -I /home/user/code/.. -O3",
         "directory": "/home/user/code",
-        "command": "/usr/bin/clang++ file.cc",
-        "file": "file.cc"
-    },
-    {
-        "directory": "/home/user/code",
-        "command": "/usr/bin/clang++ file.cc",
-        "file": "file.cc"
+        "file": "file.c"
     }
 ]

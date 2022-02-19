@@ -103,7 +103,10 @@ def parse_arguments(argv: Optional[Sequence[str]] = None):
         default=os.getcwd() + "/compile_commands.json",
         help=(
             "output path for the generated compilation database file.\n"
-            "defaults to compile_commands.json within the current working directory"
+            "defaults to compile_commands.json within the current working directory\n"
+            "--output=stdout to redirect to stdout\n"
+            "--output=stderr to redirect to stderr\n"
+            "--output=none is equivalent to --output=/dev/null\n"
         ),
     )
 
@@ -143,6 +146,14 @@ def parse_arguments(argv: Optional[Sequence[str]] = None):
         default="",
         type=str,
         help="file path prefix of include_files and remove_files",
+    )
+
+    file_handling_group.add_argument(
+        "--remove_duplicates",
+        default=False,
+        action="store_true",
+        help="prevent a file appearing twice in the CDB,\n"
+        "it can occur when two different translation units are based on the same source file.",
     )
 
     regex_group = parser.add_argument_group(title="regex-related flags")
@@ -196,21 +207,6 @@ def parse_arguments(argv: Optional[Sequence[str]] = None):
         default=False,
         action="store_true",
         help="normalize paths contained in the command",
-    )
-
-    misc_group = parser.add_argument_group(title="misc.")
-    misc_group.add_argument(
-        "--disallow_duplicates",
-        default=False,
-        action="store_true",
-        help="prevent a file appearing twice in the CDB,\n"
-        "it can occur when two different translation units are based on the same source file.",
-    )
-
-    misc_group.add_argument(
-        "--force_write",
-        default=False,
-        help="force write compile commands even when compile commands list is empty",
     )
 
     args = parser.parse_args(argv)

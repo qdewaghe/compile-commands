@@ -1,12 +1,12 @@
 [
   {
     "directory": "/home/user/code",
-    "command": "/usr/bin/clang++ file.cc",
-    "file": "file.cc"
+    "command": "/usr/bin/clang++ file.cpp",
+    "file": "file.cpp"
   },
   {
     "directory": "/home/user/code",
-    "command": "/usr/bin/clang++ file.cc",
-    "file": "file.cc"
+    "command": "/usr/bin/g++ file.cpp -iquote /tmp/",
+    "file": "file.cpp"
   }
 ]

@@ -69,7 +69,7 @@ def change_compiler_path(data: List[Any], new_path: str) -> List[Any]:
     return data
 
 
-def to_clang(data):
+def to_clang(data: List[Any]) -> List[Any]:
     for entry in data:
         entry["command"] = (
             entry["command"].replace("/gcc", "/clang").replace("/g++", "/clang++")
@@ -77,7 +77,7 @@ def to_clang(data):
     return data
 
 
-def to_gcc(data):
+def to_gcc(data: List[Any]) -> List[Any]:
     for entry in data:
         entry["command"] = (
             entry["command"].replace("/clang++", "/g++").replace("/clang", "/gcc")
@@ -85,13 +85,13 @@ def to_gcc(data):
     return data
 
 
-def run(args, index: int, total: int, quiet: bool):
+def run(args, index: int, total: int, quiet: bool) -> None:
     if not quiet:
         print(f"[{index + 1}/{total}]")
     Popen(args, shell=True).wait()
 
 
-def execute(data: List[Any], threads: int, quiet: bool):
+def execute(data: List[Any], threads: int, quiet: bool) -> None:
     total = len(data)
 
     with concurrent.futures.ProcessPoolExecutor(max_workers=threads) as executor:
@@ -137,18 +137,19 @@ def filter_commands(data: List[Any], regex: str, replacement: str) -> List[Any]:
     return data
 
 
-def normalize_cdb(data) -> list[Any]:
-    if len(data) == 0:
-        return []
-
-    # We don't assume that if one entry has no "argument"
-    # then none of them have, because in the case that
-    # CDB are merged, they might have different origins
+def to_command_cdb(data: List[Any]) -> List[Any]:
     for entry in data:
         if (args := entry.get("arguments")) is not None:
             entry["command"] = shlex.join(args)
             del entry["arguments"]
+    return data
 
+
+def to_arguments_cdb(data: List[Any]) -> List[Any]:
+    for entry in data:
+        if (command := entry.get("command")) is not None:
+            entry["arguments"] = shlex.split(command)
+            del entry["command"]
     return data
 
 
@@ -181,7 +182,7 @@ def process_cdb(args, data: List[Any]) -> List[Any]:
     elif args.gcc:
         data = to_gcc(data)
 
-    if args.disallow_duplicates:
+    if args.remove_duplicates:
         data = [dict(t) for t in {tuple(d.items()) for d in data}]
 
     if args.absolute_include_paths:
@@ -225,34 +226,36 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
 
     if not args.output:
         args.output = f"{args.dir}/compile_commands.json"
-    overwrote = os.path.isfile(args.output)
 
-    create_file = not (args.output == "stdout" or args.output == "stderr")
+    create_file = not any(
+        [
+            args.output.lower() == "stdout",
+            args.output.lower() == "stderr",
+            args.output.lower() == "none",
+        ]
+    )
 
-    data = normalize_cdb(data)
+    data = to_command_cdb(data)
     data = process_cdb(args, data)
 
     if create_file:
-        if len(data) > 0 or args.force_write:
+        if data or args.force_write:
             with open(str(args.output), "w") as json_file:
-                json.dump(data, json_file, indent=4, sort_keys=False)
+                json.dump(data, json_file, indent=4, sort_keys=True)
         else:
             print("error: The output compilation database has no commands.")
-            print("Use --force-write to generate it anyway.")
             return 1
     else:
         if args.output == "stdout":
-            print(json.dumps(data, indent=4, sort_keys=False))
+            print(json.dumps(data, indent=4, sort_keys=True))
         elif args.output == "stderr":
-            print(json.dumps(data, indent=4, sort_keys=False))
+            print(json.dumps(data, indent=4, sort_keys=True), file=sys.stderr)
 
     if not args.quiet:
         end = time.time()
 
         print(
-            "{} {} with {} command(s) in {}s.".format(
-                args.output,
-                "updated" if overwrote else "created",
+            "{} commands processed in {}s.".format(
                 len(data),
                 round(end - start, 4),
             )

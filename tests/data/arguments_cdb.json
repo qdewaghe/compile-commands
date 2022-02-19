@@ -1,0 +1,11 @@
+ [
+        {"file": "somefile.cpp", "command": "command", "dir": "somedir"},
+        {
+            "file": "somefile.cpp",
+            "arguments": ["gcc", "somefile", "-Iinclude", "-o", "someoutput"]
+        },
+        {
+            "file": "somefile.cpp",
+            "arguments": ["command", "with spaces!"]
+        }
+]

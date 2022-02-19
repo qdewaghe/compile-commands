@@ -13,7 +13,13 @@ def current_path() -> Path:
 @pytest.fixture
 def cdb(current_path: Path):
     with open(current_path / "data/data.json", "r") as f:
-        return json.loads(f.read())
+        return json.load(f)
+
+
+@pytest.fixture
+def arguments_cdb(current_path: Path):
+    with open(current_path / "data/arguments_cdb.json", "r") as f:
+        return json.load(f)
 
 
 @pytest.mark.parametrize(
@@ -54,53 +60,62 @@ def test_absolute_include_paths(cdb, index, output):
     assert data[index]["command"].endswith(output)
 
 
-def test_add_flags(cdb):
-    data = add_flags(cdb, "-flag")
-    for entry in data:
-        assert "-flag" in entry["command"]
-
-
-def test_to_gcc(cdb):
+@pytest.mark.parametrize(
+    "index,compiler",
+    [
+        (0, "/usr/bin/gcc"),
+        (1, "/usr/bin/g++"),
+        (2, "/usr/bin/g++"),
+        (3, "/usr/bin/gcc"),
+    ],
+)
+def test_to_gcc(cdb, index, compiler):
     data = to_gcc(cdb)
-    assert data[0]["command"].startswith("/usr/bin/gcc")
-    assert data[1]["command"].startswith("/usr/bin/g++")
-    assert data[2]["command"].startswith("/usr/bin/g++")
-    assert data[3]["command"].startswith("/usr/bin/gcc")
+    assert data[index]["command"].startswith(compiler)
 
 
-def test_to_clang(cdb):
+@pytest.mark.parametrize(
+    "index,compiler",
+    [
+        (0, "/usr/bin/clang"),
+        (1, "/usr/bin/clang++"),
+        (2, "/usr/bin/clang++"),
+        (3, "/usr/bin/clang"),
+    ],
+)
+def test_to_clang(cdb, index, compiler):
     data = to_clang(cdb)
-    assert data[0]["command"].startswith("/usr/bin/clang")
-    assert data[1]["command"].startswith("/usr/bin/clang++")
-    assert data[2]["command"].startswith("/usr/bin/clang++")
-    assert data[3]["command"].startswith("/usr/bin/clang")
+    assert data[index]["command"].startswith(compiler)
 
 
-def test_change_compiler_path(cdb):
-    data = change_compiler_path(cdb, "/usr/local/bin/")
-    for entry in data:
-        assert entry["command"].startswith("/usr/local/bin/")
+@pytest.mark.parametrize(
+    "regex,length",
+    [
+        ("file", 0),
+        ("\\.cpp$", 2),
+        ("\\.c$", 2),
+    ],
+)
+def test_filter_files(cdb, regex, length):
+    assert len(filter_files(cdb, regex)) == length
 
 
-def test_filter_files(cdb):
-    assert len(filter_files(cdb, "file")) == 0
-    assert len(filter_files(cdb, "\\.cpp$")) == 2
-    assert len(filter_files(cdb, "\\.c$")) == 2
-
-
-def test_get_compile_dbs(current_path: Path) -> None:
-    assert len(get_compile_dbs(current_path / "data/compile_commands_tests")) == 3
-
-
-def test_merge_json_files(current_path: Path) -> None:
-    assert (
-        len(
-            merge_json_files(
-                get_compile_dbs(current_path / "data/compile_commands_tests")
-            )
-        )
-        == 6
+def test_get_compile_dbs(current_path: Path):
+    p = str(current_path / "data/compile_commands_tests")
+    assert set(get_compile_dbs(p)) == set(
+        [
+            os.path.join(p, "component1/compile_commands.json"),
+            os.path.join(p, "component2/compile_commands.json"),
+            os.path.normpath(
+                os.path.join(p, "../external_component/compile_commands.json")
+            ),
+        ]
     )
+
+
+def test_merge_json_files(current_path: Path):
+    p = str(current_path / "data/compile_commands_tests")
+    assert len(merge_json_files(get_compile_dbs(p))) == 6
 
 
 def test_filter_commands(cdb):
@@ -112,24 +127,72 @@ def test_filter_commands(cdb):
         assert "-o" not in entry["command"] and "output" not in entry["command"]
 
 
-def test_normalize_cdb():
+@pytest.mark.parametrize(
+    "index,result",
+    [
+        (1, "gcc somefile -Iinclude -o someoutput"),
+        (2, "command 'with spaces!'"),
+    ],
+)
+def test_command_cdb(arguments_cdb, index, result):
+    data = to_command_cdb(arguments_cdb)
 
-    data = [
-        {"file": "somefile.cpp", "command": "command", "dir": "somedir"},
-        {
-            "file": "somefile.cpp",
-            "arguments": ["gcc", "somefile", "-Iinclude", "-o", "someoutput"],
-        },
-        {
-            "file": "somefile.cpp",
-            "arguments": ["command", "with spaces!"],
-        },
-    ]
+    assert "arguments" not in data[index].keys()
+    assert data[index]["command"] == result
 
-    data = normalize_cdb(data)
+
+@pytest.mark.parametrize(
+    "index,result",
+    [
+        (0, ["/usr/bin/gcc", "path/to/file1.c", "-o", "path/to/output.o", "-I.."]),
+        (
+            1,
+            [
+                "/usr/bin/g++",
+                "path/to/file2.cpp",
+                "-o",
+                "path/to/output.o",
+                "-iquote",
+                ".",
+            ],
+        ),
+        (
+            2,
+            [
+                "/usr/bin/clang++",
+                "path/to/file3.cpp",
+                "-o",
+                "path/to/output.o",
+                "-Isomething",
+            ],
+        ),
+        (
+            3,
+            [
+                "/usr/bin/clang",
+                "path/to/file4.c",
+                "-o",
+                "path/to/output.o",
+                "-isystem",
+                "/path/to/build/directory/include",
+            ],
+        ),
+    ],
+)
+def test_arguments_cdb(cdb, index, result):
+    data = to_arguments_cdb(cdb)
+
+    assert "command" not in data[index].keys()
+    assert data[index]["arguments"] == result
+
+
+def test_change_compiler_path(cdb):
+    data = change_compiler_path(cdb, "/usr/local/bin/")
     for entry in data:
-        assert entry.get("command") is not None
-        assert entry.get("arguments", 0) == 0
+        assert entry["command"].startswith("/usr/local/bin/")
 
-    assert data[1]["command"] == "gcc somefile -Iinclude -o someoutput"
-    assert data[2]["command"] == "command 'with spaces!'"
+
+def test_add_flags(cdb):
+    data = add_flags(cdb, "-flag")
+    for entry in data:
+        assert "-flag" in entry["command"]
