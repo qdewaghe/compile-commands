@@ -5,6 +5,7 @@ from pathlib import Path
 from subprocess import Popen
 from glob2 import glob
 from src.arguments import parse_arguments
+from typing import Optional, Sequence, List
 
 import shlex
 import concurrent.futures
@@ -12,6 +13,7 @@ import re
 import time
 import json
 import os
+import sys
 
 
 def get_compile_dbs(directory):
@@ -180,41 +182,49 @@ def process_cdb(args, data):
     return data
 
 
-def main() -> int:
-    args = parse_arguments()
+def main(argv: Optional[Sequence[str]] = None) -> int:
     start = time.time()
+    args = parse_arguments(argv)
 
     if args.file:
-        args.dir = str(Path(os.path.abspath(args.file)).parent)
+        args.file = os.path.abspath(args.file)
+        args.dir = os.path.dirname(args.file)
+    else:
+        args.dir = os.path.normpath(os.path.abspath(args.dir))
 
-    args.dir = os.path.normpath(os.path.abspath(args.dir))
-
-    data = []
     if args.merge or args.files:
         if not args.files:
-            args.files = get_compile_dbs(args.dir)
-        data = merge_json_files(args.files)
+            data = merge_json_files(get_compile_dbs(args.dir))
+        else:
+            try:
+                data = merge_json_files(args.files)
+            except FileNotFoundError as e:
+                print(
+                    f"error: one of the file passed to --files couldn't be opened.",
+                    file=sys.stderr,
+                )
+                print(e, file=sys.stderr)
+                return 2
     else:
-        # if --merge is not set we use existing data inside the specified directory
-        filepath = f"{args.dir}/compile_commands.json"
+        filepath = args.file if args.file else f"{args.dir}/compile_commands.json"
         try:
             with open(filepath, "r") as json_file:
                 data = json.load(json_file)
-        except:
-            print(f"{filepath} not found. Did you forget --merge?")
+        except FileNotFoundError:
+            print(f"error: {filepath} not found.", file=sys.stderr)
             return 2
 
     output_cdb = f"{args.dir}/{args.output}"
     overwrote = os.path.isfile(output_cdb)
 
-    data: list[Any] = normalize_cdb(data)
-    data: list[Any] = process_cdb(args, data)
+    data: List[Any] = normalize_cdb(data)
+    data: List[Any] = process_cdb(args, data)
 
     if len(data) > 0 or args.force_write:
         with open(str(output_cdb), "w") as json_file:
             json.dump(data, json_file, indent=4, sort_keys=False)
     else:
-        print("The output compilation database has no commands.")
+        print("error: The output compilation database has no commands.")
         print("Use --force-write to generate it anyway.")
         return 1
 

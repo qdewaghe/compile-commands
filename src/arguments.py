@@ -1,7 +1,7 @@
 from argparse import ArgumentParser, RawTextHelpFormatter
 from importlib.metadata import version
 from multiprocessing import cpu_count
-
+from typing import Optional, Sequence
 import os
 import sys
 
@@ -12,7 +12,7 @@ def dir_path(path):
     raise NotADirectoryError(path)
 
 
-def parse_arguments():
+def parse_arguments(argv: Optional[Sequence[str]] = None):
     parser = ArgumentParser(
         description=(
             "Utility to manipulate compilation databases. (CDB)\n"
@@ -213,15 +213,15 @@ def parse_arguments():
         help="force write compile commands even when compile commands list is empty",
     )
 
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
-    if args.threads != 1 and not args.run:
+    if args.threads != cpu_count() and not args.run:
         print(
             "warning: --threads (-j) will be ignored since --run was not passed.",
             file=sys.stderr,
         )
 
-    if len(args.files) > 1 and not args.merge:
+    if args.files and len(args.files) > 1 and not args.merge:
         print(
             "warning: more than one file passed to --files, it implies --merge which was not specified.",
             file=sys.stderr,
