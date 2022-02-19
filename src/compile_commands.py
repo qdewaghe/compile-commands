@@ -159,12 +159,12 @@ def process_cdb(args, data: List[Any]) -> List[Any]:
 
     if args.remove_files:
         data = remove_files(
-            data, [args.path_prefix + x.strip() for x in args.remove_files.split(",")]
+            data, [args.path_prefix + x.strip() for x in args.remove_files]
         )
 
     if args.include_files:
         data = include_files(
-            data, [args.path_prefix + x.strip() for x in args.include_files.split(",")]
+            data, [args.path_prefix + x.strip() for x in args.include_files]
         )
 
     if args.filter_files:
@@ -227,16 +227,24 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         args.output = f"{args.dir}/compile_commands.json"
     overwrote = os.path.isfile(args.output)
 
+    create_file = not (args.output == "stdout" or args.output == "stderr")
+
     data = normalize_cdb(data)
     data = process_cdb(args, data)
 
-    if len(data) > 0 or args.force_write:
-        with open(str(args.output), "w") as json_file:
-            json.dump(data, json_file, indent=4, sort_keys=False)
+    if create_file:
+        if len(data) > 0 or args.force_write:
+            with open(str(args.output), "w") as json_file:
+                json.dump(data, json_file, indent=4, sort_keys=False)
+        else:
+            print("error: The output compilation database has no commands.")
+            print("Use --force-write to generate it anyway.")
+            return 1
     else:
-        print("error: The output compilation database has no commands.")
-        print("Use --force-write to generate it anyway.")
-        return 1
+        if args.output == "stdout":
+            print(json.dumps(data, indent=4, sort_keys=False))
+        elif args.output == "stderr":
+            print(json.dumps(data, indent=4, sort_keys=False))
 
     if not args.quiet:
         end = time.time()
