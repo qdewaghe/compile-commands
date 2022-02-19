@@ -16,31 +16,42 @@ def cdb(current_path: Path):
         return json.loads(f.read())
 
 
-def test_remove_files(cdb):
-    assert len(remove_files(cdb, "path/to/file2.cpp")) == 3
-    assert (
-        len(remove_files(cdb, str("path/to/file1.c,path/to/file2.cpp").split(","))) == 2
-    )
-    assert len(remove_files(cdb, "path/to/doesnotexist.c")) == 4
+@pytest.mark.parametrize(
+    "file,count",
+    [
+        (["path/to/file2.cpp"], 3),
+        (["path/to/file1.c", "path/to/file2.cpp"], 2),
+        (["path/to/doesnotexist.c"], 4),
+    ],
+)
+def test_remove_files(cdb, file, count):
+    assert len(remove_files(cdb, file)) == count
 
 
-def test_include_files(cdb):
-    assert len(include_files(cdb, "path/to/file2.cpp")) == 1
-    assert (
-        len(include_files(cdb, str("path/to/file1.c,path/to/file2.cpp").split(",")))
-        == 2
-    )
-    assert len(include_files(cdb, "path/to/doesnotexist.c")) == 0
+@pytest.mark.parametrize(
+    "file,count",
+    [
+        (["path/to/file2.cpp"], 1),
+        (["path/to/file1.c", "path/to/file2.cpp"], 2),
+        (["path/to/doesnotexist.c"], 0),
+    ],
+)
+def test_include_files(cdb, file, count):
+    assert len(include_files(cdb, file)) == count
 
 
-def test_absolute_include_paths(cdb):
+@pytest.mark.parametrize(
+    "index,output",
+    [
+        (0, "-I/path/to/build/directory/.."),
+        (1, "-iquote /path/to/build/directory/."),
+        (2, "-I/path/to/build/directory/something"),
+        (3, "-isystem /path/to/build/directory/include"),
+    ],
+)
+def test_absolute_include_paths(cdb, index, output):
     data = absolute_include_paths(cdb)
-
-    print(data[0]["command"])
-    assert data[0]["command"].endswith("-I/path/to/build/directory/..")
-    assert data[1]["command"].endswith("-iquote /path/to/build/directory/.")
-    assert data[2]["command"].endswith("-I/path/to/build/directory/something")
-    assert data[3]["command"].endswith("-isystem /path/to/build/directory/include")
+    assert data[index]["command"].endswith(output)
 
 
 def test_add_flags(cdb):

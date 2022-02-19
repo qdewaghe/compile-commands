@@ -38,10 +38,15 @@ def include_files(data: List[Any], files: List[str]) -> List[Any]:
 
 
 def merge_json_files(paths: List[str]) -> List[Any]:
-    data = []
+    data: List[Any] = []
     for path in paths:
-        with open(str(path), "r") as json_file:
-            data.extend(json.load(json_file))
+        try:
+            with open(str(path), "r") as json_file:
+                data.extend(json.load(json_file))
+        except ValueError as e:
+            print(f"Couldn't parse json file: {path}", file=sys.stderr)
+            print(e, file=sys.stderr)
+            exit(1)
     return data
 
 
@@ -80,13 +85,13 @@ def to_gcc(data):
     return data
 
 
-def run(args, index, total, quiet):
+def run(args, index: int, total: int, quiet: bool):
     if not quiet:
         print(f"[{index + 1}/{total}]")
     Popen(args, shell=True).wait()
 
 
-def execute(data, threads, quiet):
+def execute(data: List[Any], threads: int, quiet: bool):
     total = len(data)
 
     with concurrent.futures.ProcessPoolExecutor(max_workers=threads) as executor:
@@ -94,7 +99,7 @@ def execute(data, threads, quiet):
             executor.submit(run, entry["command"], index, total, quiet)
 
 
-def absolute_include_paths(data):
+def absolute_include_paths(data: List[Any]) -> List[Any]:
     for entry in data:
         directory = entry["directory"]
         command = entry["command"]
@@ -120,11 +125,11 @@ def absolute_include_paths(data):
     return data
 
 
-def filter_files(data, regex: str):
+def filter_files(data: List[Any], regex: str) -> List[Any]:
     return [d for d in data if not re.search(regex, d["file"], re.IGNORECASE)]
 
 
-def filter_commands(data, regex, replacement):
+def filter_commands(data: List[Any], regex: str, replacement: str) -> List[Any]:
     for entry in data:
         entry["command"] = re.sub(
             regex, replacement, entry["command"], flags=re.IGNORECASE
@@ -148,6 +153,7 @@ def normalize_cdb(data) -> list[Any]:
 
 
 def process_cdb(args, data: List[Any]) -> List[Any]:
+
     if args.add_flags:
         data = add_flags(data, args.add_flags)
 
@@ -218,7 +224,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             return 2
 
     if not args.output:
-        args.output = f"{args.dir}/{args.output}"
+        args.output = f"{args.dir}/compile_commands.json"
     overwrote = os.path.isfile(args.output)
 
     data = normalize_cdb(data)

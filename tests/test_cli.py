@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 from pathlib import Path
-
 import src.compile_commands as cc
 import pytest
 
@@ -48,3 +47,17 @@ def test_no_files(capsys, current_path):
         "error: one of the file passed to --files couldn't be opened.\n"
         "[Errno 2] No such file or directory: '/home/quentin/code/compile-commands/tests/does_not_exist.json'\n"
     )
+
+
+def test_execution(capfd, current_path):
+    file = str(current_path / "data/execution.json")
+    cc.main(["--file", file, "--run", "-q"])
+
+    out, err = capfd.readouterr()
+
+    assert not err
+    assert out.startswith("Executing all commands, this may take a while...\n")
+
+    # Execution order isn't guaranteed
+    assert "hello" in out
+    assert "hello1" in out

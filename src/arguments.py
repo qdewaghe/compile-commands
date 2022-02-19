@@ -201,8 +201,8 @@ def parse_arguments(argv: Optional[Sequence[str]] = None):
     misc_group = parser.add_argument_group(title="misc.")
     misc_group.add_argument(
         "--disallow_duplicates",
-        default=True,
-        action="store_false",
+        default=False,
+        action="store_true",
         help="prevent a file appearing twice in the CDB,\n"
         "it can occur when two different translation units are based on the same source file.",
     )

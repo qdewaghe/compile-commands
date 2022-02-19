@@ -1,0 +1,32 @@
+[
+    {
+        "directory": "/home/user/code",
+        "command": "/usr/bin/clang++ file.cc",
+        "file": "file.cc"
+    },
+    {
+        "directory": "/home/user/code",
+        "command": "/usr/bin/clang++ file.cc",
+        "file": "file.cc"
+    },
+    {
+        "directory": "/home/user/code",
+        "command": "/usr/bin/clang++ file.cc",
+        "file": "file.cc"
+    },
+    {
+        "directory": "/home/user/code",
+        "command": "/usr/bin/clang++ file.cc",
+        "file": "file.cc"
+    },
+    {
+        "directory": "/home/user/code",
+        "command": "/usr/bin/clang++ file.cc",
+        "file": "file.cc"
+    },
+    {
+        "directory": "/home/user/code",
+        "command": "/usr/bin/clang++ file.cc",
+        "file": "file.cc"
+    }
+]
