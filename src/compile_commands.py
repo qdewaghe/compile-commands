@@ -5,7 +5,7 @@ from pathlib import Path
 from subprocess import Popen
 from glob2 import glob
 from src.arguments import parse_arguments
-from typing import Optional, Sequence, List
+from typing import Optional, Sequence, List, Any
 
 import shlex
 import concurrent.futures
@@ -16,26 +16,28 @@ import os
 import sys
 
 
-def get_compile_dbs(directory):
-    paths = list(glob(f"{os.path.abspath(directory)}/**/compile_commands.json"))
+def get_compile_dbs(directory) -> List[str]:
+    paths: List[str] = list(
+        str(p) for p in glob(f"{os.path.abspath(directory)}/**/compile_commands.json")
+    )
 
     # Since we take into account symlinks we have to make sure the symlinks
-    # doesn't resolve to a file that we already take into account
+    # doesn't resolve to a file that we already have
     paths = list(set([os.path.realpath(p) for p in paths]))
 
     # Making sure to ignore a compile_commands.json in the root directory
     return [p for p in paths if Path(p).parent.parts[-1] != Path(directory).parts[-1]]
 
 
-def remove_files(data, files):
+def remove_files(data: List[Any], files: List[str]) -> List[Any]:
     return [d for d in data if d["file"] not in files]
 
 
-def include_files(data, files):
+def include_files(data: List[Any], files: List[str]) -> List[Any]:
     return [d for d in data if d["file"] in files]
 
 
-def merge_json_files(paths):
+def merge_json_files(paths: List[str]) -> List[Any]:
     data = []
     for path in paths:
         with open(str(path), "r") as json_file:
@@ -43,13 +45,13 @@ def merge_json_files(paths):
     return data
 
 
-def add_flags(data, flags: str):
+def add_flags(data: List[Any], flags: str) -> List[Any]:
     for entry in data:
         entry["command"] = entry["command"] + " " + flags
     return data
 
 
-def change_compiler_path(data, new_path: str):
+def change_compiler_path(data: List[Any], new_path: str) -> List[Any]:
     for entry in data:
         compiler_path = entry["command"].split(" ")[0]
         compiler = Path(compiler_path).parts[-1]
@@ -145,7 +147,7 @@ def normalize_cdb(data) -> list[Any]:
     return data
 
 
-def process_cdb(args, data):
+def process_cdb(args, data: List[Any]) -> List[Any]:
     if args.add_flags:
         data = add_flags(data, args.add_flags)
 
@@ -192,6 +194,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     else:
         args.dir = os.path.normpath(os.path.abspath(args.dir))
 
+    data: List[Any] = []
     if args.merge or args.files:
         if not args.files:
             data = merge_json_files(get_compile_dbs(args.dir))
@@ -214,14 +217,15 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             print(f"error: {filepath} not found.", file=sys.stderr)
             return 2
 
-    output_cdb = f"{args.dir}/{args.output}"
-    overwrote = os.path.isfile(output_cdb)
+    if not args.output:
+        args.output = f"{args.dir}/{args.output}"
+    overwrote = os.path.isfile(args.output)
 
-    data: List[Any] = normalize_cdb(data)
-    data: List[Any] = process_cdb(args, data)
+    data = normalize_cdb(data)
+    data = process_cdb(args, data)
 
     if len(data) > 0 or args.force_write:
-        with open(str(output_cdb), "w") as json_file:
+        with open(str(args.output), "w") as json_file:
             json.dump(data, json_file, indent=4, sort_keys=False)
     else:
         print("error: The output compilation database has no commands.")
@@ -233,7 +237,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
 
         print(
             "{} {} with {} command(s) in {}s.".format(
-                output_cdb,
+                args.output,
                 "updated" if overwrote else "created",
                 len(data),
                 round(end - start, 4),

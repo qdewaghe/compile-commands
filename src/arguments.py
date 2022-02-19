@@ -1,7 +1,7 @@
 from argparse import ArgumentParser, RawTextHelpFormatter
 from importlib.metadata import version
 from multiprocessing import cpu_count
-from typing import Optional, Sequence
+from typing import Optional, Sequence, Any
 import os
 import sys
 
