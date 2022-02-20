@@ -94,6 +94,20 @@ def execute(data: List[Any], threads: int, quiet: bool) -> None:
             executor.submit(run, entry["arguments"], index, total, quiet)
 
 
+def normalize_include_directories(data: List[Any]) -> List[Any]:
+    for entry in data:
+        arguments = entry["arguments"]
+        is_path = True
+        for index, arg in enumerate(arguments):
+            if arg in ("-I", "-isystem", "-iquote", "-idirafter"):
+                is_path = True
+            elif is_path:
+                is_path = False
+                arguments[index] = os.path.normpath(arg)
+
+    return data
+
+
 def absolute_include_directories(data: List[Any]) -> List[Any]:
     for entry in data:
         directory = entry["directory"]
@@ -214,6 +228,9 @@ def process_cdb(args, data: List[Any]) -> List[Any]:
 
         if args.filter_include_directories:
             data = filter_include_directories(data, args.filter_include_directories)
+
+    if args.normalize_include_directories:
+        data = normalize_include_directories(data)
 
     if args.command:
         data = to_command_cdb(data)

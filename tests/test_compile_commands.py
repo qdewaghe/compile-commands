@@ -30,9 +30,9 @@ def normalized_cdb(cdb):
 @pytest.mark.parametrize(
     "file,count",
     [
-        (["path/to/file2.cpp"], 3),
-        (["path/to/file1.c", "path/to/file2.cpp"], 2),
-        (["path/to/doesnotexist.c"], 4),
+        (["path/to/file2.cpp"], 4),
+        (["path/to/file1.c", "path/to/file2.cpp"], 3),
+        (["path/to/doesnotexist.c"], 5),
     ],
 )
 def test_remove_files(cdb, file, count):
@@ -81,6 +81,21 @@ def test_absolute_include_directories(normalized_cdb, index, flag, dir):
     assert data[index]["arguments"][-2] == flag
 
 
+def test_normalize_include_directories(normalized_cdb):
+    data = normalize_include_directories(normalized_cdb)
+    assert data[4]["arguments"] == [
+        "/usr/bin/clang",
+        "-isystem",
+        "/path/to/build/directory",
+        "-I",
+        "..",
+        "-I",
+        ".",
+        "-isystem",
+        "/home",
+    ]
+
+
 @pytest.mark.parametrize(
     "index,clang,gcc",
     [
@@ -101,7 +116,7 @@ def test_compiler(normalized_cdb, index, clang, gcc):
     "regex,length",
     [
         ("file", 0),
-        ("\\.cpp$", 2),
+        ("\\.cpp$", 3),
         ("\\.c$", 2),
     ],
 )

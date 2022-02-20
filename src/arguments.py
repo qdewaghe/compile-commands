@@ -211,6 +211,13 @@ def parse_arguments(argv: Optional[Sequence[str]] = None):
         help="make the paths contained in the command absolute",
     )
 
+    path_group.add_argument(
+        "--normalize_include_directories",
+        default=False,
+        action="store_true",
+        help="normalize include directory paths in the command",
+    )
+
     args = parser.parse_args(argv)
 
     if args.threads != cpu_count() and not args.run:

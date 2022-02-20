@@ -18,5 +18,10 @@
             "directory": "/path/to/build/directory",
             "command": "/usr/bin/clang path/to/file4.c -o path/to/output.o -isystem /path/to/build/directory/include",
             "file": "path/to/file4.c"
+        },
+        {
+            "directory": "/path/to/build/directory",
+            "command": "/usr/bin/clang -isystem /path/to/build/directory/include/.. -I .. -I. -isystem /tmp/../home/",
+            "file": "path/to/file5.c"
         }
 ]
