@@ -15,9 +15,9 @@ Requires at least python 3.8
 
 ## Usage
 
-This tool has many possible uses, I'll go through some of them to showcase how it can be used.
+This tool has many possible uses, some of them are listed below.
 
-In a project composed of subproject with their own build folder, you can use `--merge` and indicate the root `--dir` and it will merge them in the specified directory.\
+In a project composed of subproject with their own build directories, you can use `--merge` and indicate the root `--dir` and it will merge them.
 This is particularly useful for LSP servers that don't handle these projects well.
 
 ```bash
@@ -28,28 +28,28 @@ This may be slow if the project is big one alternative would to specify "by hand
 
 ``` bash
 compile-commands --files $(fd compile_commands.json)
-compile-commands --files myproject1/build/compile_commands.json myproject2/build/compile_commands.json
+compile-commands --files myproject1/build/compile_commands.json myproject2/build/compile_commands.json --merge
 ```
-Here, `--merge` is implied and it will output by default in the current working directory. `--dir` can still be used to change the output location. Note that `-o` only changes the name of the output file.
+The output file will named by default "compile_commands.json" in the current working directory. You can use `-o`, `--output` to override this behavior. 
 
-You can also indicate to the LSP server that you prefer using libc++ instead of libstdc++ even if your buildsystem doesn't use it.
+You can also indicate to a LSP server that you prefer using libc++ instead of libstdc++ even if your buildsystem doesn't use it.
 
 ```bash
-compile-commands --file /path/to/project/compile-commands.json \
+compile-commands --file compile-commands.json \
                  --add_flags='-stdlib=libc++'
 ```
 
-`--add_flags` takes in a string so you can add multiple flags
+`--add_flags` takes in a string so you can add multiple flags easily
 
 ```bash
-compile-commands --file /path/to/project/compile-commands.json \
+compile-commands --file compile-commands.json \
                  --add_flags='-stdlib=libc++ -O0'
 ```
 
-You can combine `--add_flags` with `--run` to monitor warnings as example:
+You can combine `--add_flags` with `--run` to monitor warnings:
 
 ```bash
-compile-commands --file /path/to/project/compile-commands.json \
+compile-commands --file compile-commands.json \
                  --add_flags='-Wall -Wextra -pedantic -fsyntax' \
                  --run --threads=12
 ```
@@ -60,29 +60,28 @@ You can decide to treat only a subset of your project by using `--filter-files` 
 You can as example filter out .c files from the database:
 
 ```bash 
-compile-commands --file /path/to/project/compile-commands.json \
-                 --filter-files='.*\.c$' \
-                 --remove-files='path/to/file1,path/to/file2'
+compile-commands --file compile-commands.json \
+                 --filter_files='.*\.c$' \
+                 --remove_files path/to/file1 path/to/file2
 ```
 
 You can decide to treat only a subset of your project by using `--include_files` which takes in a comma-separated list of absolute paths. You can also prefix each paths passed to `--include_files` and `--remove_files` by using `--path-prefix`.
 
 ```bash 
-compile-commands --file /path/to/project/compile-commands.json \
-                 --include-files='path/to/file1,path/to/file2'
+compile-commands --file compile-commands.json \
+                 --include_files= path/to/file1 path/to/file2
 ```
 
 You can use the `-o` flag to specify the name of the output file in case you don't want to overwrite
 
 ```bash
-compile-commands --file /path/to/project/compile-commands.json \
-                 --filter-files='.*\.c$' \
-                 --remove-files='path/to/file1,path/to/file2' \
-                 -o 'my-db-without-c-files.json'
+compile-commands --file compile-commands.json \
+                 --filter_files='.c\$' \
+                 -o my-db-without-c-files.json
 ```
 
 You can also filter out parts of the commands based on a regular expression using `--filter`. \
-This is particularly useful when you need to modify the `-o` from the command. 
+This is particularly useful when you need to modify the `-o` from the compiler's command. 
 A good example of that is using [ClangBuildAnalyzer](https://github.com/aras-p/ClangBuildAnalyzer). 
 
 ```bash
@@ -109,6 +108,6 @@ What if g++ was used during the creation of compilation database ? In this case 
                       --run -j 12 
 ```
 
-`--filter` also accepts a replacement through the `--replacement` flag, it accepts reference to groups within the regular expression as per `re.sub()`. `--filter` is also useful to remove flags that are not compatible with both compilers.
+`--filter` also accepts a replacement through the `--replacement` flag, it accepts reference to groups within the regular expression as per `re.sub()`. `--filter` is also useful to remove flags that are not compatible with both gcc and clang.
 
-If you are a user of the Ninja buildsystem you might notice that the above example does not work. That is because generating a CDB through Cmake using Ninja as the generator will result in having relative include paths within the CDB (relative to "directory" that is). This is inconvenient because the above effectively moves the build directory but does not move dependencies. To fix that you can use `--absolute_include_paths` which will try to modify relative includes paths into absolute include paths. 
+If you are a user of the Ninja buildsystem you might notice that the above example does not work. That is because generating a CDB through Cmake using Ninja as the generator will result in having relative include paths within the CDB (relative to "directory" that is). This is inconvenient because the above effectively moves the build directory but does not move dependencies. To fix that you can use `--absolute_include_directories` which will try to modify relative includes paths into absolute include paths. 

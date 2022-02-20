@@ -92,7 +92,7 @@ def parse_arguments(argv: Optional[Sequence[str]] = None):
     compiler_group.add_argument(
         "--compiler_path",
         type=dir_path,
-        help="change the compiler path (e.g. --compiler_path='/usr/local/bin')",
+        help="change the compiler path (e.g. --compiler_path='/usr/local/bin')\n",
     )
 
     output_group = parser.add_argument_group(title="output options")
@@ -155,13 +155,7 @@ def parse_arguments(argv: Optional[Sequence[str]] = None):
         help="prevent the same translation unit from appearing twice in the CDB.",
     )
 
-    regex_group = parser.add_argument_group(title="regex-related flags")
-    regex_group.add_argument(
-        "--filter_files",
-        type=str,
-        help="regular expression that will filter out matching files",
-    )
-
+    regex_group = parser.add_argument_group(title="filtering flags")
     regex_group.add_argument(
         "--filter",
         type=str,
@@ -173,6 +167,12 @@ def parse_arguments(argv: Optional[Sequence[str]] = None):
         type=str,
         default="",
         help="replacement for matches of --filter, can reference groups matched.",
+    )
+
+    regex_group.add_argument(
+        "--filter_files",
+        type=str,
+        help="regular expression that will filter out matching files",
     )
 
     regex_group.add_argument(

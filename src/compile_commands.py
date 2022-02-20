@@ -285,7 +285,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     data = process_cdb(args, data)
 
     if create_file:
-        if data or args.force_write:
+        if data:
             with open(str(args.output), "w") as json_file:
                 json.dump(data, json_file, indent=4, sort_keys=True)
         else:
