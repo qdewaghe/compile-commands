@@ -52,6 +52,21 @@ def test_include_files(cdb, file, count):
 
 
 @pytest.mark.parametrize(
+    "regex,index,expected_args_len",
+    [
+        ("\\.", 0, 4),
+        ("\\.", 1, 4),
+        ("something", 2, 4),
+        ("\\.", 2, 6),
+        ("path/to/", 3, 4),
+    ],
+)
+def test_filter_include_directories(normalized_cdb, regex, index, expected_args_len):
+    data = filter_include_directories(normalized_cdb, regex)
+    assert len(data[index]["arguments"]) == expected_args_len
+
+
+@pytest.mark.parametrize(
     "index,flag,dir",
     [
         (0, "-I", "/path/to/build"),
@@ -60,8 +75,8 @@ def test_include_files(cdb, file, count):
         (3, "-isystem", "/path/to/build/directory/include"),
     ],
 )
-def test_absolute_include_paths(normalized_cdb, index, flag, dir):
-    data = absolute_include_paths(normalized_cdb)
+def test_absolute_include_directories(normalized_cdb, index, flag, dir):
+    data = absolute_include_directories(normalized_cdb)
     assert data[index]["arguments"][-1] == dir
     assert data[index]["arguments"][-2] == flag
 

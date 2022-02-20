@@ -165,7 +165,7 @@ def parse_arguments(argv: Optional[Sequence[str]] = None):
     regex_group.add_argument(
         "--filter",
         type=str,
-        help="regular expression that will filter matches from each command",
+        help="regular expression that will filter out matches from each command",
     )
 
     regex_group.add_argument(
@@ -173,6 +173,16 @@ def parse_arguments(argv: Optional[Sequence[str]] = None):
         type=str,
         default="",
         help="replacement for matches of --filter, can reference groups matched.",
+    )
+
+    regex_group.add_argument(
+        "--filter_include_directories",
+        default="",
+        type=str,
+        help=(
+            "regular expression that will filter out matching include directories\n"
+            "This applies before AND after --absolute_include_directories"
+        ),
     )
 
     execution_group = parser.add_argument_group(title="execution-related flags")
@@ -192,20 +202,13 @@ def parse_arguments(argv: Optional[Sequence[str]] = None):
     )
 
     path_group = parser.add_argument_group(
-        title="path-related flags",
+        title="Misc.",
     )
     path_group.add_argument(
-        "--absolute_include_paths",
+        "--absolute_include_directories",
         default=False,
         action="store_true",
         help="make the paths contained in the command absolute",
-    )
-
-    path_group.add_argument(
-        "--normalize_paths",
-        default=False,
-        action="store_true",
-        help="normalize paths contained in the command",
     )
 
     args = parser.parse_args(argv)

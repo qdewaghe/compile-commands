@@ -94,7 +94,7 @@ def execute(data: List[Any], threads: int, quiet: bool) -> None:
             executor.submit(run, entry["arguments"], index, total, quiet)
 
 
-def absolute_include_paths(data: List[Any]) -> List[Any]:
+def absolute_include_directories(data: List[Any]) -> List[Any]:
     for entry in data:
         directory = entry["directory"]
         arguments = entry["arguments"]
@@ -120,6 +120,23 @@ def filter_commands(data: List[Any], regex: str, replacement: str) -> List[Any]:
         entry["command"] = re.sub(
             regex, replacement, entry["command"], flags=re.IGNORECASE
         )
+    return data
+
+
+def filter_include_directories(data: List[Any], regex: str) -> List[Any]:
+    for entry in data:
+        is_path = False
+        arguments = entry["arguments"]
+        for index, arg in enumerate(arguments):
+            if arg in ("-I", "-isystem", "-iquote", "-idirafter"):
+                is_path = True
+            elif is_path:
+                is_path = False
+                if re.search(regex, arg) is not None:
+                    arguments[index] = ""
+                    arguments[index - 1] = ""
+
+        entry["arguments"] = list(filter(None, arguments))
     return data
 
 
@@ -189,8 +206,14 @@ def process_cdb(args, data: List[Any]) -> List[Any]:
         s = {json.dumps(d, sort_keys=True) for d in data}
         data = [json.loads(t) for t in s]
 
-    if args.absolute_include_paths:
-        data = absolute_include_paths(data)
+    if args.filter_include_directories:
+        data = filter_include_directories(data, args.filter_include_directories)
+
+    if args.absolute_include_directories:
+        data = absolute_include_directories(data)
+
+        if args.filter_include_directories:
+            data = filter_include_directories(data, args.filter_include_directories)
 
     if args.command:
         data = to_command_cdb(data)

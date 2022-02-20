@@ -30,7 +30,7 @@ def test_golden(current_path):
             "--add_flags=-O3",
             "--filter_files",
             ".cc",
-            "--absolute_include_paths",
+            "--absolute_include_directories",
         ]
     )
 
