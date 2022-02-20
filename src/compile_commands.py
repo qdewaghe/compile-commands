@@ -1,14 +1,15 @@
 #!/usr/bin/env python3
 
-from typing import Any
-from pathlib import Path
-from subprocess import Popen
-from glob2 import glob
+
 from src.arguments import parse_arguments
-from typing import Optional, Sequence, List, Any, Dict
+
+from concurrent.futures import ProcessPoolExecutor
+from typing import Optional, Sequence, List, Any
+from subprocess import check_output, STDOUT, CalledProcessError
+from pathlib import Path
+from glob2 import glob
 
 import shlex
-import concurrent.futures
 import re
 import time
 import json
@@ -80,18 +81,26 @@ def to_gcc(data: List[Any]) -> List[Any]:
     return data
 
 
-def run(args, index: int, total: int, quiet: bool) -> None:
-    if not quiet:
-        print(f"[{index + 1}/{total}]")
-    Popen(args).wait()
+def run(args: List[str], index: int, total: int, quiet: bool, file: str) -> None:
+    try:
+        output = check_output(args, stderr=STDOUT, universal_newlines=True)
+    except CalledProcessError as exc:
+        print(
+            f"command ({shlex.join(args)}) {index + 1} of {total} failed "
+            f"with return code {exc.returncode}\n{exc.output}",
+        )
+    else:
+        print(f"[{index + 1}/{total}] '{shlex.join(args)}' {output}")
 
 
 def execute(data: List[Any], threads: int, quiet: bool) -> None:
     total = len(data)
+    if not quiet:
+        print(f"Executing {total} commands, this may take a while...")
 
-    with concurrent.futures.ProcessPoolExecutor(max_workers=threads) as executor:
+    with ProcessPoolExecutor(max_workers=threads) as executor:
         for index, entry in enumerate(data):
-            executor.submit(run, entry["arguments"], index, total, quiet)
+            executor.submit(run, entry["arguments"], index, total, quiet, entry["file"])
 
 
 def normalize_include_directories(data: List[Any]) -> List[Any]:
@@ -309,7 +318,6 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
 
     if args.run:
         data = normalize(data)
-        print("Executing all commands, this may take a while...")
         execute(data, args.threads, args.quiet)
 
     return 0
