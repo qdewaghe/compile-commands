@@ -36,8 +36,8 @@ def test_golden(current_path):
 
     with open(o, "r") as after:
         with open(i, "r") as before:
-            a = sorted(json.load(after), key=lambda d: d["command"])
-            b = sorted(json.load(before), key=lambda d: d["command"])
+            a = sorted(json.load(after), key=lambda d: d["arguments"])
+            b = sorted(json.load(before), key=lambda d: d["arguments"])
             assert a == b
 
     os.remove(o)

@@ -109,4 +109,5 @@ def test_add_test(capsys, current_path):
     data = json.loads(err)
 
     for entry in data:
-        assert entry["command"].endswith("-O3 -g")
+        assert "-O3" in entry["arguments"]
+        assert "-g" in entry["arguments"]

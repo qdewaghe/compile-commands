@@ -152,8 +152,7 @@ def parse_arguments(argv: Optional[Sequence[str]] = None):
         "--remove_duplicates",
         default=False,
         action="store_true",
-        help="prevent a file appearing twice in the CDB,\n"
-        "it can occur when two different translation units are based on the same source file.",
+        help="prevent the same translation unit from appearing twice in the CDB.",
     )
 
     regex_group = parser.add_argument_group(title="regex-related flags")

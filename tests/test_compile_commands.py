@@ -22,6 +22,11 @@ def arguments_cdb(current_path: Path):
         return json.load(f)
 
 
+@pytest.fixture
+def normalized_cdb(cdb):
+    return normalize(cdb)
+
+
 @pytest.mark.parametrize(
     "file,count",
     [
@@ -47,45 +52,34 @@ def test_include_files(cdb, file, count):
 
 
 @pytest.mark.parametrize(
-    "index,output",
+    "index,flag,dir",
     [
-        (0, "-I/path/to/build/directory/.."),
-        (1, "-iquote /path/to/build/directory/."),
-        (2, "-I/path/to/build/directory/something"),
-        (3, "-isystem /path/to/build/directory/include"),
+        (0, "-I", "/path/to/build"),
+        (1, "-iquote", "/path/to/build/directory"),
+        (2, "-I", "/path/to/build/directory/something"),
+        (3, "-isystem", "/path/to/build/directory/include"),
     ],
 )
-def test_absolute_include_paths(cdb, index, output):
-    data = absolute_include_paths(cdb)
-    assert data[index]["command"].endswith(output)
+def test_absolute_include_paths(normalized_cdb, index, flag, dir):
+    data = absolute_include_paths(normalized_cdb)
+    assert data[index]["arguments"][-1] == dir
+    assert data[index]["arguments"][-2] == flag
 
 
 @pytest.mark.parametrize(
-    "index,compiler",
+    "index,clang,gcc",
     [
-        (0, "/usr/bin/gcc"),
-        (1, "/usr/bin/g++"),
-        (2, "/usr/bin/g++"),
-        (3, "/usr/bin/gcc"),
+        (0, "/usr/bin/clang", "/usr/bin/gcc"),
+        (1, "/usr/bin/clang++", "/usr/bin/g++"),
+        (2, "/usr/bin/clang++", "/usr/bin/g++"),
+        (3, "/usr/bin/clang", "/usr/bin/gcc"),
     ],
 )
-def test_to_gcc(cdb, index, compiler):
-    data = to_gcc(cdb)
-    assert data[index]["command"].startswith(compiler)
-
-
-@pytest.mark.parametrize(
-    "index,compiler",
-    [
-        (0, "/usr/bin/clang"),
-        (1, "/usr/bin/clang++"),
-        (2, "/usr/bin/clang++"),
-        (3, "/usr/bin/clang"),
-    ],
-)
-def test_to_clang(cdb, index, compiler):
-    data = to_clang(cdb)
-    assert data[index]["command"].startswith(compiler)
+def test_compiler(normalized_cdb, index, clang, gcc):
+    data = to_clang(normalized_cdb)
+    assert data[index]["arguments"][0] == clang
+    data = to_gcc(normalized_cdb)
+    assert data[index]["arguments"][0] == gcc
 
 
 @pytest.mark.parametrize(
@@ -186,13 +180,14 @@ def test_arguments_cdb(cdb, index, result):
     assert data[index]["arguments"] == result
 
 
-def test_change_compiler_path(cdb):
-    data = change_compiler_path(cdb, "/usr/local/bin/")
+def test_change_compiler_path(normalized_cdb):
+    data = change_compiler_path(normalized_cdb, "/usr/local/bin/")
     for entry in data:
-        assert entry["command"].startswith("/usr/local/bin/")
+        assert entry["arguments"][0].startswith("/usr/local/bin/")
 
 
-def test_add_flags(cdb):
-    data = add_flags(cdb, "-flag")
+def test_add_flags(normalized_cdb):
+    data = add_flags(normalized_cdb, "-flag -O3")
     for entry in data:
-        assert "-flag" in entry["command"]
+        assert "-flag" in entry["arguments"]
+        assert "-O3" in entry["arguments"]

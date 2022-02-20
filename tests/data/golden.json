@@ -1,27 +1,42 @@
 [
     {
-        "command": "/usr/bin/clang++ file.cxx -O3",
+        "arguments": [
+            "/usr/bin/clang",
+            "file.c",
+            "-I",
+            "/home/user",
+            "-O3"
+        ],
+        "directory": "/home/user/code",
+        "file": "file.c"
+    },
+    {
+        "arguments": [
+            "/usr/bin/clang++",
+            "file.cpp",
+            "-O3"
+        ],
+        "directory": "/home/user/code",
+        "file": "file.cpp"
+    },
+    {
+        "arguments": [
+            "/usr/bin/g++",
+            "file.cpp",
+            "-iquote",
+            "/tmp/",
+            "-O3"
+        ],
+        "directory": "/home/user/code",
+        "file": "file.cpp"
+    },
+    {
+        "arguments": [
+            "/usr/bin/clang++",
+            "file.cxx",
+            "-O3"
+        ],
         "directory": "/home/user/code",
         "file": "file.cxx"
-    },
-    {
-        "command": "/usr/bin/clang file.c -I/home/user/code/.. -O3",
-        "directory": "/home/user/code",
-        "file": "file.c"
-    },
-    {
-        "command": "/usr/bin/g++ file.cpp -iquote /tmp/ -O3",
-        "directory": "/home/user/code",
-        "file": "file.cpp"
-    },
-    {
-        "command": "/usr/bin/clang++ file.cpp -O3",
-        "directory": "/home/user/code",
-        "file": "file.cpp"
-    },
-    {
-        "command": "/usr/bin/clang file.c -I /home/user/code/.. -O3",
-        "directory": "/home/user/code",
-        "file": "file.c"
     }
 ]

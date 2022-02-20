@@ -5,7 +5,7 @@ from pathlib import Path
 from subprocess import Popen
 from glob2 import glob
 from src.arguments import parse_arguments
-from typing import Optional, Sequence, List, Any
+from typing import Optional, Sequence, List, Any, Dict
 
 import shlex
 import concurrent.futures
@@ -52,35 +52,30 @@ def merge_json_files(paths: List[str]) -> List[Any]:
 
 def add_flags(data: List[Any], flags: str) -> List[Any]:
     for entry in data:
-        entry["command"] = entry["command"] + " " + flags
+        entry["arguments"].extend(flags.split())
     return data
 
 
 def change_compiler_path(data: List[Any], new_path: str) -> List[Any]:
     for entry in data:
-        compiler_path = entry["command"].split(" ")[0]
-        compiler = Path(compiler_path).parts[-1]
-
-        new_path = os.path.normpath(new_path + "/")
-
-        entry["command"] = entry["command"].replace(
-            compiler_path, new_path + "/" + compiler
-        )
+        compiler_path = entry["arguments"][0]
+        compiler = os.path.basename(compiler_path)
+        entry["arguments"][0] = os.path.normpath(new_path) + "/" + compiler
     return data
 
 
 def to_clang(data: List[Any]) -> List[Any]:
     for entry in data:
-        entry["command"] = (
-            entry["command"].replace("/gcc", "/clang").replace("/g++", "/clang++")
+        entry["arguments"][0] = (
+            entry["arguments"][0].replace("/gcc", "/clang").replace("/g++", "/clang++")
         )
     return data
 
 
 def to_gcc(data: List[Any]) -> List[Any]:
     for entry in data:
-        entry["command"] = (
-            entry["command"].replace("/clang++", "/g++").replace("/clang", "/gcc")
+        entry["arguments"][0] = (
+            entry["arguments"][0].replace("/clang++", "/g++").replace("/clang", "/gcc")
         )
     return data
 
@@ -88,7 +83,7 @@ def to_gcc(data: List[Any]) -> List[Any]:
 def run(args, index: int, total: int, quiet: bool) -> None:
     if not quiet:
         print(f"[{index + 1}/{total}]")
-    Popen(args, shell=True).wait()
+    Popen(args).wait()
 
 
 def execute(data: List[Any], threads: int, quiet: bool) -> None:
@@ -96,32 +91,23 @@ def execute(data: List[Any], threads: int, quiet: bool) -> None:
 
     with concurrent.futures.ProcessPoolExecutor(max_workers=threads) as executor:
         for index, entry in enumerate(data):
-            executor.submit(run, entry["command"], index, total, quiet)
+            executor.submit(run, entry["arguments"], index, total, quiet)
 
 
 def absolute_include_paths(data: List[Any]) -> List[Any]:
     for entry in data:
         directory = entry["directory"]
-        command = entry["command"]
+        arguments = entry["arguments"]
 
-        # Include paths with spaces `-I include` and without spaces `-Iinclude`
-        # are treated separately. The first regular expressions deals with the includes
-        # with spaces, and conversely for the second.
-        #
-        # This won't work well if there are multiple spaces between the include flag
-        # and the first char because it'll break the lookahead that checks that the path
-        # is indeed relative by verifying that the first char is not a '/'.
-        # There is probably a better way to do this.
-        command = re.sub(
-            r"(-I|-iquote|-isystem|-idirafter)(?=\s)(\s+)(?=[^\/])([^\/]\S*)",
-            f"\\1\\2{directory}/\\3",
-            command,
-        )
-        entry["command"] = re.sub(
-            r"(-I|-iquote|-isystem|-idirafter)(?=\S)(?=[^\/])([^\/]\S*)",
-            f"\\1{directory}/\\2",
-            command,
-        )
+        is_path = False
+        for index, arg in enumerate(arguments):
+            if arg in ("-I", "-isystem", "-iquote", "-idirafter"):
+                is_path = True
+            elif is_path:
+                is_path = False
+                if not os.path.isabs(arg):
+                    arguments[index] = os.path.normpath(os.path.join(directory, arg))
+
     return data
 
 
@@ -153,11 +139,22 @@ def to_arguments_cdb(data: List[Any]) -> List[Any]:
     return data
 
 
+def normalize(data: List[Any]) -> List[Any]:
+    data = to_arguments_cdb(data)
+
+    for entry in data:
+        arguments = [
+            x
+            for arg in entry["arguments"]
+            for x in re.split("(-I)|(-iquote)|(-isystem)|(-idirafter)", arg)
+        ]
+
+        entry["arguments"] = list(filter(None, arguments))
+
+    return data
+
+
 def process_cdb(args, data: List[Any]) -> List[Any]:
-
-    if args.add_flags:
-        data = add_flags(data, args.add_flags)
-
     if args.remove_files:
         data = remove_files(
             data, [args.path_prefix + x.strip() for x in args.remove_files]
@@ -172,7 +169,13 @@ def process_cdb(args, data: List[Any]) -> List[Any]:
         data = filter_files(data, args.filter_files)
 
     if args.filter:
+        data = to_command_cdb(data)
         data = filter_commands(data, args.filter, args.replacement)
+
+    data = normalize(data)
+
+    if args.add_flags:
+        data = add_flags(data, args.add_flags)
 
     if args.compiler_path:
         data = change_compiler_path(data, args.compiler_path)
@@ -183,10 +186,14 @@ def process_cdb(args, data: List[Any]) -> List[Any]:
         data = to_gcc(data)
 
     if args.remove_duplicates:
-        data = [dict(t) for t in {tuple(d.items()) for d in data}]
+        s = {json.dumps(d, sort_keys=True) for d in data}
+        data = [json.loads(t) for t in s]
 
     if args.absolute_include_paths:
         data = absolute_include_paths(data)
+
+    if args.command:
+        data = to_command_cdb(data)
 
     return data
 
@@ -235,7 +242,6 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         ]
     )
 
-    data = to_command_cdb(data)
     data = process_cdb(args, data)
 
     if create_file:
@@ -262,6 +268,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         )
 
     if args.run:
+        data = normalize(data)
         print("Executing all commands, this may take a while...")
         execute(data, args.threads, args.quiet)
 
