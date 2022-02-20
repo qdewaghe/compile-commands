@@ -44,10 +44,8 @@ def test_no_files(capsys, current_path):
     cc.main(["--files", str(f), str(current_path / "data/data.json"), "--merge"])
     out, err = capsys.readouterr()
     assert not out
-    assert err == (
-        "error: one of the file passed to --files couldn't be opened.\n"
-        "[Errno 2] No such file or directory: '/home/quentin/code/compile-commands/tests/does_not_exist.json'\n"
-    )
+    assert "error: one of the file passed to --files couldn't be opened.\n" in err
+    assert "[Errno 2] No such file or directory:" in err
 
 
 def test_execution(capfd, current_path):
