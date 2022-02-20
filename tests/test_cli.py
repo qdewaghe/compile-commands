@@ -55,7 +55,6 @@ def test_execution(capfd, current_path):
     out, err = capfd.readouterr()
 
     assert not err
-    assert out.startswith("Executing all commands, this may take a while...\n")
 
     # Execution order isn't guaranteed
     assert "hello" in out

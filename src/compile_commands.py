@@ -81,7 +81,7 @@ def to_gcc(data: List[Any]) -> List[Any]:
     return data
 
 
-def run(args: List[str], index: int, total: int, quiet: bool, file: str) -> None:
+def run(args: List[str], index: int, total: int) -> None:
     try:
         output = check_output(args, stderr=STDOUT, universal_newlines=True)
     except CalledProcessError as exc:
@@ -100,7 +100,7 @@ def execute(data: List[Any], threads: int, quiet: bool) -> None:
 
     with ProcessPoolExecutor(max_workers=threads) as executor:
         for index, entry in enumerate(data):
-            executor.submit(run, entry["arguments"], index, total, quiet, entry["file"])
+            executor.submit(run, entry["arguments"], index, total)
 
 
 def normalize_include_directories(data: List[Any]) -> List[Any]:
