@@ -6,6 +6,7 @@ from src.arguments import parse_arguments
 from concurrent.futures import ProcessPoolExecutor
 from typing import Optional, Sequence, List, Any
 from subprocess import check_output, STDOUT, CalledProcessError
+from pprint import pprint
 from pathlib import Path
 from glob2 import glob
 
@@ -81,7 +82,7 @@ def to_gcc(data: List[Any]) -> List[Any]:
     return data
 
 
-def run(args: List[str], index: int, total: int) -> None:
+def run(args: List[str], index: int, total: int, verbose: int) -> None:
     try:
         output = check_output(args, stderr=STDOUT, universal_newlines=True)
     except CalledProcessError as exc:
@@ -90,17 +91,18 @@ def run(args: List[str], index: int, total: int) -> None:
             f"with return code {exc.returncode}\n{exc.output}",
         )
     else:
-        print(f"[{index + 1}/{total}] '{shlex.join(args)}' {output}")
+        if verbose:
+            print(f"[{index + 1}/{total}] '{shlex.join(args)}' {output}")
 
 
-def execute(data: List[Any], threads: int, quiet: bool) -> None:
+def execute(data: List[Any], threads: int, verbose: int) -> None:
     total = len(data)
-    if not quiet:
+    if verbose:
         print(f"Executing {total} commands, this may take a while...")
 
     with ProcessPoolExecutor(max_workers=threads) as executor:
         for index, entry in enumerate(data):
-            executor.submit(run, entry["arguments"], index, total)
+            executor.submit(run, entry["arguments"], index, total, verbose)
 
 
 def normalize_include_directories(data: List[Any]) -> List[Any]:
@@ -260,7 +262,19 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     data: List[Any] = []
     if args.merge or args.files:
         if not args.files:
-            data = merge_json_files(get_compile_dbs(args.dir))
+            cdbs = get_compile_dbs(args.dir)
+            if not cdbs:
+                print(
+                    f"error: no compilation databases found in {args.dir}",
+                    file=sys.stderr,
+                )
+                return 1
+
+            if args.verbose > 1:
+                print("-- Found the following compilation databases: ")
+                pprint(cdbs)
+                print("")
+            data = merge_json_files(cdbs)
         else:
             try:
                 data = merge_json_files(args.files)
@@ -283,6 +297,18 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     if not args.output:
         args.output = f"{args.dir}/compile_commands.json"
 
+    data = process_cdb(args, data)
+
+    if args.verbose:
+        end = time.time()
+
+        print(
+            "-- {} commands processed in {}s.".format(
+                len(data),
+                round(end - start, 4),
+            )
+        )
+
     create_file = not any(
         [
             args.output.lower() == "stdout",
@@ -291,10 +317,10 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         ]
     )
 
-    data = process_cdb(args, data)
-
     if create_file:
         if data:
+            if args.verbose:
+                print(f"-- writing to {args.output}")
             with open(str(args.output), "w") as json_file:
                 json.dump(data, json_file, indent=4, sort_keys=True)
         else:
@@ -306,19 +332,9 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         elif args.output == "stderr":
             print(json.dumps(data, indent=4, sort_keys=True), file=sys.stderr)
 
-    if not args.quiet:
-        end = time.time()
-
-        print(
-            "{} commands processed in {}s.".format(
-                len(data),
-                round(end - start, 4),
-            )
-        )
-
     if args.run:
         data = normalize(data)
-        execute(data, args.threads, args.quiet)
+        execute(data, args.threads, args.verbose)
 
     return 0
 

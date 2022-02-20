@@ -50,7 +50,7 @@ def test_no_files(capsys, current_path):
 
 def test_execution(capfd, current_path):
     file = str(current_path / "data/execution.json")
-    cc.main(["--file", file, "--run", "-q"])
+    cc.main(["--file", file, "--run", "-v"])
 
     out, err = capfd.readouterr()
 
@@ -65,7 +65,7 @@ def test_warnings(capsys, current_path):
     f1 = str(current_path / "data/data.json")
     f2 = f1
 
-    cc.main(["--files", f1, f2, "-q", "-o", "none"])
+    cc.main(["--files", f1, f2, "-o", "none"])
     out, err = capsys.readouterr()
     assert not out
     assert (
@@ -73,14 +73,14 @@ def test_warnings(capsys, current_path):
         == "warning: more than one file passed to --files, it implies --merge which was not specified.\n"
     )
 
-    cc.main(["--file", f1, "-j", "1", "-q", "-o", "/dev/null"])
+    cc.main(["--file", f1, "-j", "1", "-o", "/dev/null"])
     out, err = capsys.readouterr()
     assert not out
     assert (
         err == "warning: --threads (-j) will be ignored since --run was not passed.\n"
     )
 
-    cc.main(["--file", f1, "--replacement='\\1'", "-q", "-o=None"])
+    cc.main(["--file", f1, "--replacement='\\1'", "-o=None"])
     out, err = capsys.readouterr()
     assert not out
     assert err == "warning: --replacement requires --filter\n"

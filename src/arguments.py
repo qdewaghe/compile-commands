@@ -1,7 +1,7 @@
 from argparse import ArgumentParser, RawTextHelpFormatter
 from importlib.metadata import version
 from multiprocessing import cpu_count
-from typing import Optional, Sequence, Any
+from typing import Optional, Sequence
 import os
 import sys
 
@@ -31,11 +31,11 @@ def parse_arguments(argv: Optional[Sequence[str]] = None):
     )
 
     parser.add_argument(
-        "-q",
-        "--quiet",
-        default=False,
-        action="store_true",
-        help="quiet mode",
+        "-v",
+        "--verbose",
+        action="count",
+        default=0,
+        help="increases verbosity (up to three times)",
     )
 
     location_group = parser.add_mutually_exclusive_group(required=True)
@@ -235,5 +235,9 @@ def parse_arguments(argv: Optional[Sequence[str]] = None):
 
     if args.replacement and not args.filter:
         print("warning: --replacement requires --filter", file=sys.stderr)
+
+    if args.verbose > 2:
+        print("-- CLI arguments: ")
+        print(args, end="\n\n")
 
     return args
