@@ -10,6 +10,11 @@ from pprint import pprint
 from pathlib import Path
 from glob2 import glob
 
+try:
+    import simplejson as json
+except ImportError:
+    import json
+
 import shlex
 import re
 import time
@@ -167,7 +172,7 @@ def filter_include_directories(data: List[Any], regex: str) -> List[Any]:
 
 def to_command_cdb(data: List[Any]) -> List[Any]:
     for entry in data:
-        if (args := entry.get("arguments")) is not None:
+        if args := entry.get("arguments"):
             entry["command"] = shlex.join(args)
             del entry["arguments"]
     return data
@@ -175,22 +180,30 @@ def to_command_cdb(data: List[Any]) -> List[Any]:
 
 def to_arguments_cdb(data: List[Any]) -> List[Any]:
     for entry in data:
-        if (command := entry.get("command")) is not None:
-            entry["arguments"] = shlex.split(command)
+        if command := entry.get("command"):
+            if "'" in command or '"' in command:
+                entry["arguments"] = shlex.split(command)
+            else:
+                entry["arguments"] = command.split()
+
             del entry["command"]
     return data
 
 
+def split_includes(s: str, regex) -> List[str]:
+    if s.startswith("-I") or s.startswith("-i"):
+        return regex.split(s)
+    return [s]
+
+
 def normalize(data: List[Any]) -> List[Any]:
     data = to_arguments_cdb(data)
+    regex = re.compile("(-I)|(-iquote)|(-isystem)|(-idirafter)")
 
     for entry in data:
         arguments = [
-            x
-            for arg in entry["arguments"]
-            for x in re.split("(-I)|(-iquote)|(-isystem)|(-idirafter)", arg)
+            x for arg in entry["arguments"] for x in split_includes(arg, regex)
         ]
-
         entry["arguments"] = list(filter(None, arguments))
 
     return data
@@ -328,9 +341,9 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             return 1
     else:
         if args.output == "stdout":
-            print(json.dumps(data, indent=4, sort_keys=True))
+            print(json.dumps(data, indent=4, sort_keys=False))
         elif args.output == "stderr":
-            print(json.dumps(data, indent=4, sort_keys=True), file=sys.stderr)
+            print(json.dumps(data, indent=4, sort_keys=False), file=sys.stderr)
 
     if args.run:
         data = normalize(data)

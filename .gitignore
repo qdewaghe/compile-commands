@@ -140,3 +140,7 @@ dmypy.json
 # profiling data
 .prof
 
+benchmark/graph.dot
+benchmark/graph.svg
+benchmark/output.cprof
+benchmark/tmp.json
