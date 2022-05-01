@@ -187,7 +187,7 @@ def to_arguments_cdb(data: List[Any]) -> List[Any]:
 
 
 def split_includes(s: str, regex) -> List[str]:
-    if s.startswith("-I") or s.startswith("-i"):
+    if s.startswith(("-I", "-i")):
         return regex.split(s)
     return [s]
 
