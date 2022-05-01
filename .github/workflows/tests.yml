@@ -19,9 +19,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Install
         run: pip install .[extra]
-      - name: Stubs
-        run: mypy --install-types
       - name: Unit tests and coverage
         run: pytest --cov =.
       - name: Static analysis
-        run: mypy src
+        run: mypy src --install-types --non-interactive
