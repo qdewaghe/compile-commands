@@ -54,8 +54,8 @@ compile-commands --file compile-commands.json \
                  --run --threads=12
 ```
 
-You can decide to treat only a subset of your project by using `--filter-files` or `--remove-files`.\
-`--filter-files` takes in a regular expression whereas `--remove-files` takes in a comma-separated list of absolute paths.
+You can decide to treat only a subset of your project by using `--filter_files` or `--remove_files`.\
+`--filter_files` takes in a regular expression whereas `--remove_files` takes in a comma-separated list of absolute paths.
 
 You can as example filter out .c files from the database:
 
