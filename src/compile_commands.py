@@ -10,15 +10,11 @@ from pprint import pprint
 from pathlib import Path
 from glob2 import glob
 
-try:
-    import simplejson as json
-except ImportError:
-    import json
+import json
 
 import shlex
 import re
 import time
-import json
 import os
 import sys
 
