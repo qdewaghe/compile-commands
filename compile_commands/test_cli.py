@@ -28,8 +28,7 @@ def test_exclusive_commands(capsys, arg1, arg2):
 
     out, err = capsys.readouterr()
     assert not out
-    assert err == (
-        "usage: compile-commands --file=FILE\n"
+    assert err.endswith(
         f"pytest: error: argument {arg2}: not allowed with argument {arg1}\n"
     )
 

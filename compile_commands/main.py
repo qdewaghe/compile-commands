@@ -33,7 +33,6 @@ def parse_arguments(argv: Optional[Sequence[str]] = None):
             "https://github.com/qdewaghe/compile-commands\n"
             "https://pypi.org/project/compile-commands"
         ),
-        usage="compile-commands --file=FILE",
         formatter_class=RawTextHelpFormatter,
     )
 
