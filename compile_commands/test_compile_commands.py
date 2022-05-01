@@ -1,5 +1,5 @@
 from pathlib import Path
-from src.compile_commands import *
+from .main import *
 
 import pytest
 import json

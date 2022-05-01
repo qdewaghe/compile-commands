@@ -17,9 +17,12 @@ jobs:
         uses: actions/setup-python@v2
         with:
           python-version: ${{ matrix.python-version }}
+
       - name: Install
         run: pip install .[extra]
+
       - name: Unit tests and coverage
         run: pytest --cov =.
+
       - name: Static analysis
-        run: mypy src --install-types --non-interactive
+        run: mypy compile_commands --install-types --non-interactive

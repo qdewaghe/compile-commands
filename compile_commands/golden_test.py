@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 
 from pathlib import Path
-from collections import OrderedDict
 
-import src.compile_commands as cc
+from .main import main
+
 import pytest
 import json
 import os
@@ -19,7 +19,7 @@ def test_golden(current_path):
     o = str(current_path / "data/golden_output.json")
     i = str(current_path / "data/golden.json")
 
-    cc.main(
+    main(
         [
             "--dir",
             d,
