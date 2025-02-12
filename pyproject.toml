@@ -1,3 +1,42 @@
 [build-system]
-requires = ["setuptools>=42", "wheel"]
+requires = ["setuptools>=61", "wheel"]
 build-backend = "setuptools.build_meta"
+
+[project]
+name = "compile-commands"
+version = "2.0.1"
+requires-python = ">= 3.8"
+description = "Compilation Database Manipulation Utility"
+readme = "README.md"
+license = { text = "MIT" }
+authors = [
+    { name = "Quentin Dewaghe", email = "q.dewaghe@gmail.com" },
+]
+classifiers = [
+    "License :: OSI Approved :: MIT License",
+    "Natural Language :: English",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+dependencies = [
+    "glob2",
+]
+
+[project.optional-dependencies]
+extra = [
+    "gprof2dot",
+    "mypy",
+    "pytest",
+    "pytest-cov",
+]
+
+[project.scripts]
+compile-commands = "compile_commands.main:main"
+
+[project.urls]
+Homepage = "https://github.com/qdewaghe/compile-commands"
